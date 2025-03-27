@@ -1,0 +1,145 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 1rem; /* The base border-radius for rounded corners (buttons, cards, etc.) */
+
+  /* Base “light theme” colors */
+  --background: oklch(96.12% 0 0);          /* Main page background (white) */
+  --foreground: oklch(0 0 0);        /* Default text color (very dark charcoal) */
+  --card: oklch(88.53% 0 0);                /* Background color for cards/panels (light gray) */
+  --card-foreground: var(--foreground);     /* Text color on card backgrounds */
+  --popover: var(--card);                   /* Background color for popovers (same as card) */
+  --popover-foreground: var(--foreground);  /* Text color on popovers */
+
+  /* Accent/primary color (BTC orange) */
+  --primary: oklch(0.75 0.23 70);           /* Main accent color (vibrant BTC orange) */
+  --primary-foreground: oklch(1 0 0);       /* Text color on top of the primary (white) */
+
+  /* Secondary color (re-uses the primary in this theme) */
+  --secondary: var(--primary);              /* Optional second accent, same as primary here */
+  --secondary-foreground: var(--primary-foreground);
+
+  /* Muted & border colors (lighter grays) */
+  --muted: oklch(88.53% 0 0);           /* Very light gray for subtle backgrounds */
+  --muted-foreground: oklch(0 0 0);  /* Text color on muted backgrounds */
+  --border: oklch(64.01% 0 0);          /* Border color (light gray) */
+  --input: oklch(64.01% 0 0);                   /* Background for input fields, matches border */
+
+  /* Accent = re-using the primary color */
+  --accent: var(--primary);
+  --accent-foreground: var(--primary-foreground);
+
+  /* "Destructive" color (also BTC orange, or could be a red) */
+  --destructive: var(--primary);
+
+  /* Focus ring color (often the same as the accent) */
+  --ring: var(--primary);
+
+  /* Example chart colors (adjust as needed) */
+  --chart-1: var(--primary);         /* Chart series #1 (BTC orange) */
+  --chart-2: oklch(0.6 0.18 90);     /* Chart series #2 (green-ish) */
+  --chart-3: oklch(0.45 0.12 250);   /* Chart series #3 (blue-ish) */
+  --chart-4: oklch(0.7 0.16 120);    /* Chart series #4 (teal-ish) */
+  --chart-5: oklch(0.55 0.18 320);   /* Chart series #5 (purple-ish) */
+
+  /* Sidebar colors (light theme variations) */
+  --sidebar: oklch(88.53% 0 0);                /* Sidebar background (white) */
+  --sidebar-foreground: oklch(0.12 0.02 45); /* Sidebar text (dark charcoal) */
+  --sidebar-primary: var(--primary);         /* Sidebar primary accent (orange) */
+  --sidebar-primary-foreground: oklch(1 0 0);/* Text color on sidebar accent */
+  --sidebar-accent: var(--primary);      /* Alternate accent (lighter orange) */
+  --sidebar-accent-foreground: var(--sidebar-foreground); /* Dark text on lighter orange */
+  --sidebar-border: var(--border);           /* Sidebar border color (light gray) */
+  --sidebar-ring: oklch(0.8 0.15 70);        /* Focus ring for sidebar elements */
+}
+
+.dark {
+  --background: oklch(15.48% 0.0021 286.15); /* near-black charcoal */
+  --foreground: oklch(0.98 0 0); /* white */
+  --card: oklch(26.49% 0.0018 286.27);
+  --card-foreground: oklch(1 0 0);
+  --popover: var(--card);
+  --popover-foreground: oklch(1 0 0);
+  --primary: oklch(0.75 0.23 70);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: var(--primary);
+  --secondary-foreground: var(--primary-foreground);
+  --muted: var(--card);
+  --muted-foreground: oklch(0.7 0.02 285);
+  --accent: var(--primary);
+  --accent-foreground: var(--primary-foreground);
+  --destructive: oklch(0.55 0.25 25);
+  --border: oklch(36.46% 0.0034 286.23);
+  --input: var(--border);
+  --ring: var(--primary);
+
+  /* Chart colors */
+  --chart-1: oklch(0.75 0.23 70);
+  --chart-2: oklch(0.7 0.16 120);
+  --chart-3: oklch(0.55 0.18 320);
+  --chart-4: oklch(0.6 0.18 90);
+  --chart-5: oklch(0.45 0.12 250);
+
+  /* Sidebar */
+  --sidebar: oklch(26.49% 0.0018 286.27);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.75 0.23 70);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.85 0.2 85);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: var(--border);
+  --sidebar-ring: oklch(0.85 0.2 85);
+}
+
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
