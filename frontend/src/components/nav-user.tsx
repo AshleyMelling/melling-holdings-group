@@ -51,7 +51,7 @@ export function NavUser() {
     setUser(null);
 
     // Redirect to login page
-    router.push("/login");
+    router.push("/");
   };
 
   return (

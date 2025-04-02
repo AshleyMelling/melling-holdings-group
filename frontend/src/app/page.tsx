@@ -30,9 +30,7 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Geist, Geist_Mono } from "next/font/google";
-import SiteHeader, {
-  SectionKey,
-} from "/home/remem/bitcoinholdings/frontend/src/components/SiteHeader";
+import SiteHeader, { SectionKey } from "/home/remem/bitcoinholdings/frontend/src/components/SiteHeader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

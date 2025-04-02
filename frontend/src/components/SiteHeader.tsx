@@ -6,6 +6,7 @@ import { Bitcoin, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LoginForm } from "@/components/login-form";
+import * as Dialog from "@radix-ui/react-dialog";
 
 /**
  * The shared type of all valid section IDs.
@@ -21,7 +22,6 @@ export type SectionKey =
 /** Props for the SiteHeader component */
 interface SiteHeaderProps {
   activeSection?: SectionKey;
-  // We want to scroll to one of the valid SectionKeys
   scrollToSection?: (sectionId: SectionKey) => void;
   scrolled?: boolean;
   mobileMenuOpen?: boolean;
@@ -30,12 +30,11 @@ interface SiteHeaderProps {
 
 export default function SiteHeader({
   activeSection = "home",
-  scrollToSection = () => {}, // no-op by default
+  scrollToSection = () => {},
   scrolled = false,
   mobileMenuOpen: externalMobileMenuOpen,
   setMobileMenuOpen: externalSetMobileMenuOpen,
 }: SiteHeaderProps) {
-  // Use internal state if external state isn't provided
   const [internalMobileMenuOpen, setInternalMobileMenuOpen] = useState(false);
   const mobileMenuOpen =
     externalMobileMenuOpen !== undefined
@@ -44,7 +43,7 @@ export default function SiteHeader({
   const setMobileMenuOpen =
     externalSetMobileMenuOpen || setInternalMobileMenuOpen;
 
-  // Local state for login modal
+  // Local state now for the dialog
   const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   return (
@@ -101,14 +100,47 @@ export default function SiteHeader({
                 />
               </button>
             ))}
-            {/* Login button triggers modal */}
-            <Button
-              variant="outline"
-              onClick={() => setLoginModalOpen(true)}
-              className="border-[#f97316] text-[#f97316] hover:bg-[#f97316]/10 hover:text-[#f97316] transition-all duration-300"
-            >
-              Login
-            </Button>
+            {/* Login button for desktop opens the dialog */}
+            <Dialog.Root open={loginModalOpen} onOpenChange={setLoginModalOpen}>
+              <Dialog.Trigger asChild>
+                <Button
+                  variant="outline"
+                  className="border-[#f97316] text-[#f97316] hover:bg-[#f97316]/10 hover:text-[#f97316] transition-all duration-300"
+                >
+                  Login
+                </Button>
+              </Dialog.Trigger>
+              <Dialog.Portal>
+                {/* Dimmed overlay */}
+                <Dialog.Overlay className="fixed inset-0 z-50 bg-black bg-opacity-50" />
+
+                {/* Dialog content container */}
+                <Dialog.Content
+                  // Position the dialog in the center
+                  className="fixed z-50 top-1/2 left-1/2 w-full max-w-md p-6
+               bg-[#0a0a0a]/90 text-[#f5f5f5] 
+               rounded-lg shadow-xl transform -translate-x-1/2 -translate-y-1/2
+               border border-[#333] backdrop-blur-sm"
+                >
+                  <Dialog.Title className="text-2xl font-serif font-bold mb-4">
+                    Login
+                  </Dialog.Title>
+
+                  {/* Replace with your actual <LoginForm> */}
+                  <LoginForm />
+
+                  {/* Close button in top-right corner */}
+                  <Dialog.Close asChild>
+                    <button
+                      className="absolute top-2 right-2 text-[#f5f5f5]/70 hover:text-[#f97316] transition-colors"
+                      aria-label="Close"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </Dialog.Close>
+                </Dialog.Content>
+              </Dialog.Portal>
+            </Dialog.Root>
           </nav>
 
           {/* Mobile Menu Button */}
@@ -159,51 +191,39 @@ export default function SiteHeader({
                     {item.name}
                   </button>
                 ))}
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setLoginModalOpen(true);
-                    setMobileMenuOpen(false);
-                  }}
-                  className="mt-2 border-[#f97316] text-[#f97316] hover:bg-[#f97316]/10 hover:text-[#f97316] transition-all duration-300"
+                {/* Mobile Login: also using the Radix Dialog trigger */}
+                <Dialog.Root
+                  open={loginModalOpen}
+                  onOpenChange={setLoginModalOpen}
                 >
-                  Login
-                </Button>
+                  <Dialog.Trigger asChild>
+                    <Button
+                      variant="outline"
+                      className="mt-2 border-[#f97316] text-[#f97316] hover:bg-[#f97316]/10 hover:text-[#f97316] transition-all duration-300"
+                    >
+                      Login
+                    </Button>
+                  </Dialog.Trigger>
+                  <Dialog.Portal>
+                    <Dialog.Overlay className="fixed inset-0 z-50 bg-black bg-opacity-50" />
+                    <Dialog.Content className="fixed z-50 top-1/2 left-1/2 w-full max-w-md p-6 bg-white rounded-lg shadow-lg transform -translate-x-1/2 -translate-y-1/2">
+                      <Dialog.Title className="text-xl font-bold mb-4">
+                        Login
+                      </Dialog.Title>
+                      <LoginForm />
+                      <Dialog.Close asChild>
+                        <button className="absolute top-2 right-2 text-gray-700 font-bold">
+                          X
+                        </button>
+                      </Dialog.Close>
+                    </Dialog.Content>
+                  </Dialog.Portal>
+                </Dialog.Root>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </header>
-
-      {/* Login Modal */}
-      <AnimatePresence>
-        {loginModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white p-6 rounded-lg w-full max-w-md mx-4"
-            >
-              <div className="flex justify-end">
-                <button
-                  onClick={() => setLoginModalOpen(false)}
-                  className="text-gray-700 font-bold"
-                >
-                  X
-                </button>
-              </div>
-              <LoginForm />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </>
   );
 }
