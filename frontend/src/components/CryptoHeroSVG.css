@@ -1,0 +1,152 @@
+/* Background Theme */
+html {
+  background: linear-gradient(135deg, #0c0019, #1e0f00);
+}
+
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Animated Blocks */
+#redblocks > * {
+  transform: translate3d(160px, -93px, 0);
+  animation: moveblocks 4s 1s ease infinite;
+}
+
+@keyframes moveblocks {
+  0% {
+    transform: translate3d(160px, -93px, 0);
+  }
+  50%, 100% {
+    transform: translate(0);
+  }
+}
+
+#firstBlock {
+  transform: translate3d(160px, -93px, 0);
+  animation: firstBlock 4s 1s ease infinite;
+}
+
+#blockdis {
+  animation: blockdis 4s 1s ease infinite;
+}
+
+@keyframes blockdis {
+  30% {
+    opacity: 1;
+  }
+  40%, 100% {
+    opacity: 0;
+    transform: translate3d(-160px, 93px, 0);
+  }
+}
+
+@keyframes firstBlock {
+  0%, 15% {
+    opacity: 0;
+  }
+  40%, 100% {
+    opacity: 1;
+  }
+}
+
+/* Glowing Polygons - BTC Orange Glow */
+#redblocksparticles g polygon {
+  fill: #f7931a;
+  opacity: 0.35;
+  animation: glow 4s 1s ease infinite;
+}
+
+@keyframes glow {
+  0%, 45% {
+    opacity: 0;
+  }
+  60%, 100% {
+    opacity: 0.5;
+  }
+}
+
+/* Dots Animation - You can extend for more */
+#redblocksparticles g:nth-child(1) g circle:nth-child(1) {
+  animation: dots 4s 1050ms ease infinite;
+}
+#redblocksparticles g:nth-child(1) g circle:nth-child(2) {
+  animation: dots 4s 1100ms ease infinite;
+}
+#redblocksparticles g:nth-child(1) g circle:nth-child(3) {
+  animation: dots 4s 1150ms ease infinite;
+}
+#redblocksparticles g:nth-child(1) g circle:nth-child(4) {
+  animation: dots 4s 1200ms ease infinite;
+}
+#redblocksparticles g:nth-child(1) g circle:nth-child(5) {
+  animation: dots 4s 1250ms ease infinite;
+}
+
+@keyframes dots {
+  0%, 35% {
+    transform: translate(0);
+    opacity: 0;
+  }
+  60%, 80% {
+    transform: translate(55px, -35px);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(55px, -35px);
+    opacity: 0;
+  }
+}
+
+.particlespoly {
+  animation: p 2s ease infinite alternate;
+}
+
+@keyframes p {
+  85%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Arrows Themed to BTC */
+#Layer_1 > g:nth-child(2) > g:nth-child(18) > g:nth-child(12),
+#Layer_1 > g:nth-child(2) > g:nth-child(17) > g:nth-child(12),
+#Layer_1 > g:nth-child(2) > g:nth-child(17) > g:nth-child(13) {
+  fill: #f7931a;
+  animation: arrows 1s ease-in-out infinite alternate, p 2s ease infinite alternate;
+}
+
+@keyframes arrows {
+  to {
+    transform: translate(25px, 25px);
+  }
+}
+
+@keyframes arrows2 {
+  to {
+    transform: translate(-25px, -25px);
+  }
+}
+
+@keyframes particles {
+  0%, 100% {
+    transform: translate(0);
+  }
+  50% {
+    transform: translate(10px, 15px);
+  }
+}
+
+@keyframes up {
+  to {
+    transform: translate(0, -25px);
+  }
+}
+
+@keyframes updown {
+  100% {
+    transform: translate(0, -20px);
+  }
+}

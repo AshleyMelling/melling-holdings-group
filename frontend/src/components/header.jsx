@@ -1,12 +1,21 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { ModeToggle } from "./mode-toggle";
+
 
 export default function Header() {
   return (
-    <header className="flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-[--header-height]">
+    <header
+      className="
+        relative z-20 flex h-12 shrink-0 items-center gap-2
+        border-b transition-[width,height] ease-linear
+        backdrop-blur-md bg-background/70
+        group-has-data-[collapsible=icon]/sidebar-wrapper:h-[--header-height]    
+    "
+    >
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <a href="/dashboard" className="flex items-center">
+        <a href="/" className="flex items-center">
           <Image
             src="/MHGLight.svg"
             alt="Melling Holdings Logo"
@@ -22,8 +31,8 @@ export default function Header() {
             className="h-6 w-6 object-contain hidden dark:block"
           />
         </a>
-        <a href="/dashboard" className="text-base font-medium">
-          Dashboard
+        <a href="/" className="text-base font-medium">
+          MellingHoldingsGroup
         </a>
         <Separator
           orientation="vertical"
@@ -44,6 +53,7 @@ export default function Header() {
               Login
             </a>
           </Button>
+          <ModeToggle />
         </div>
       </div>
     </header>

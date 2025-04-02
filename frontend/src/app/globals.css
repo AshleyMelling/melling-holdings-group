@@ -93,7 +93,7 @@
   --sidebar-accent: var(--primary);      /* Alternate accent (lighter orange) */
   --sidebar-accent-foreground: var(--sidebar-foreground); /* Dark text on lighter orange */
   --sidebar-border: var(--border);           /* Sidebar border color (light gray) */
-  --sidebar-ring: oklch(0.8 0.15 70);        /* Focus ring for sidebar elements */
+  --sidebar-ring: oklch(0.75 0.23 70);        /* Focus ring for sidebar elements */
 }
 
 .dark {
@@ -128,10 +128,10 @@
   --sidebar-foreground: oklch(0.98 0 0);
   --sidebar-primary: oklch(0.75 0.23 70);
   --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.85 0.2 85);
+  --sidebar-accent: oklch(0.75 0.23 70);
   --sidebar-accent-foreground: oklch(0.98 0 0);
   --sidebar-border: var(--border);
-  --sidebar-ring: oklch(0.85 0.2 85);
+  --sidebar-ring: oklch(0.75 0.23 70);
 }
 
 
@@ -143,3 +143,38 @@
     @apply bg-background text-foreground;
   }
 }
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+:root {
+  --brand-orange: hsl(30, 100%, 50%);
+  --brand-orange-glow: hsl(30, 100%, 60%);
+  --background-dark: hsl(220, 20%, 8%);
+  --gradient-start: hsl(28, 90%, 45%);
+  --gradient-end: hsl(15, 100%, 40%);
+  --glass-white: hsla(0, 0%, 100%, 0.1);
+  --text-white: hsl(0, 0%, 95%);
+  --text-muted: hsl(0, 0%, 70%);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-bounce,
+  .animate-pulse,
+  .animate-spin {
+    animation: none !important;
+  }
+}
+
