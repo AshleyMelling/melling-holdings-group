@@ -204,11 +204,11 @@ export default function PremiumLandingPage() {
         ref={(el: HTMLElement | null) => {
           sectionsRef.current.home = el;
         }}
-        className="relative min-h-screen flex items-start"
+        className="relative min-h-screen flex items-center justify-center pb-20 md:pb-32"
         style={{ opacity, scale }}
       >
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4">
-          <div className="mt-40 md:mt-48 max-w-4xl mx-auto text-center space-y-8">
+          <div className="mt-16 md:mt-40 max-w-4xl mx-auto text-center space-y-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -265,7 +265,7 @@ export default function PremiumLandingPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 1 }}
-          className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center"
+          className="fixed left-1/2 transform -translate-x-1/2 flex flex-col items-center bottom-[calc(env(safe-area-inset-bottom)+20px)] md:bottom-10 z-50"
         >
           <span className="text-sm text-[#f5f5f5]/60 mb-2 font-sans">
             Scroll to explore
