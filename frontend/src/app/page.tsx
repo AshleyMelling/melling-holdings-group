@@ -30,6 +30,9 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Geist, Geist_Mono } from "next/font/google";
+import SiteHeader, {
+  SectionKey,
+} from "/home/remem/bitcoinholdings/frontend/src/components/SiteHeader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -120,11 +123,12 @@ function AnimatedParticles() {
 }
 
 export default function PremiumLandingPage() {
-  const [activeSection, setActiveSection] = useState("home");
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<SectionKey>("home");
+  const [scrolled, setScrolled] = useState<boolean>(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
-  const sectionsRef = useRef<{ [key: string]: HTMLElement | null }>({
+  // Define sectionsRef with keys typed to SectionKey and values as HTMLElement | null.
+  const sectionsRef = useRef<{ [key in SectionKey]: HTMLElement | null }>({
     home: null,
     about: null,
     solutions: null,
@@ -136,33 +140,38 @@ export default function PremiumLandingPage() {
   const opacity = useTransform(scrollYProgress, [0, 0.05], [1, 0]);
   const scale = useTransform(scrollYProgress, [0, 0.05], [1, 0.98]);
 
+  // Updated scrollToSection using getBoundingClientRect()
+  const scrollToSection = (sectionId: SectionKey): void => {
+    setMobileMenuOpen(false);
+    const section = sectionsRef.current[sectionId];
+    if (section) {
+      const offset =
+        section.getBoundingClientRect().top + window.pageYOffset - 80;
+      window.scrollTo({
+        top: offset,
+        behavior: "smooth",
+      });
+    }
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
-      const scrollPosition = window.scrollY + 100;
-      Object.entries(sectionsRef.current).forEach(([key, section]) => {
-        if (!section) return;
-        const sectionTop = section.offsetTop;
-        const sectionBottom = sectionTop + section.offsetHeight;
-        if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
-          setActiveSection(key);
+      const scrollPos = window.scrollY + 100;
+      (Object.keys(sectionsRef.current) as SectionKey[]).forEach((key) => {
+        const section = sectionsRef.current[key];
+        if (section) {
+          const top = section.offsetTop;
+          const bottom = top + section.offsetHeight;
+          if (scrollPos >= top && scrollPos < bottom) {
+            setActiveSection(key);
+          }
         }
       });
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  const scrollToSection = (sectionId: string) => {
-    setMobileMenuOpen(false);
-    const section = sectionsRef.current[sectionId];
-    if (section) {
-      window.scrollTo({
-        top: section.offsetTop - 80,
-        behavior: "smooth",
-      });
-    }
-  };
 
   return (
     <div
@@ -184,119 +193,13 @@ export default function PremiumLandingPage() {
       </div>
 
       {/* Glassmorphic Navbar */}
-      <header
-        className={cn(
-          "w-full fixed top-0 z-50 transition-all duration-300",
-          scrolled
-            ? "bg-[#0a0a0a]/70 backdrop-blur-md border-b border-[#ffffff10]"
-            : "bg-transparent"
-        )}
-      >
-        <div className="w-full max-w-7xl mx-auto px-4 flex h-20 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="relative h-10 w-10">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-full opacity-70 blur-[2px]"></div>
-              <div className="absolute inset-0.5 bg-[#0a0a0a] rounded-full flex items-center justify-center">
-                <Bitcoin className="h-6 w-6 text-[#f97316]" />
-              </div>
-            </div>
-            <span className="text-xl font-serif font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#f97316] to-[#fbbf24]">
-              Melling Holdings Group
-            </span>
-          </div>
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            {[
-              { name: "Home", id: "home" },
-              { name: "About", id: "about" },
-              { name: "Solutions", id: "solutions" },
-              { name: "Governance", id: "governance" },
-            ].map((item) => (
-              <button
-                key={item.id}
-                onClick={() => scrollToSection(item.id)}
-                className={cn(
-                  "text-sm font-sans relative px-1 py-2 transition-colors group",
-                  activeSection === item.id
-                    ? "text-[#f97316]"
-                    : "text-[#f5f5f5] hover:text-[#f97316]"
-                )}
-              >
-                {item.name}
-                <span
-                  className={cn(
-                    "absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-[#f97316] to-[#fbbf24] transform origin-left transition-transform duration-300",
-                    activeSection === item.id
-                      ? "scale-x-100"
-                      : "scale-x-0 group-hover:scale-x-100"
-                  )}
-                ></span>
-              </button>
-            ))}
-            <Link href="/">
-              <Button
-                variant="outline"
-                className="border-[#f97316] text-[#f97316] hover:bg-[#f97316]/10 hover:text-[#f97316] transition-all duration-300"
-              >
-                Login
-              </Button>
-            </Link>
-          </nav>
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden text-[#f5f5f5]"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
-          </Button>
-        </div>
-
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-[#0a0a0a]/90 backdrop-blur-md border-b border-[#ffffff10] overflow-hidden"
-            >
-              <div className="w-full max-w-7xl mx-auto px-4 py-4 flex flex-col gap-4">
-                {[
-                  { name: "Home", id: "home" },
-                  { name: "About", id: "about" },
-                  { name: "Solutions", id: "solutions" },
-                  { name: "Governance", id: "governance" },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => scrollToSection(item.id)}
-                    className={cn(
-                      "text-left text-lg font-sans py-2 transition-colors",
-                      activeSection === item.id
-                        ? "text-[#f97316]"
-                        : "text-[#f5f5f5]"
-                    )}
-                  >
-                    {item.name}
-                  </button>
-                ))}
-                <Button
-                  variant="outline"
-                  className="mt-2 border-[#f97316] text-[#f97316] hover:bg-[#f97316]/10 hover:text-[#f97316] transition-all duration-300"
-                >
-                  Login
-                </Button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </header>
+      <SiteHeader
+        activeSection={activeSection}
+        scrolled={scrolled}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+        scrollToSection={scrollToSection}
+      />
 
       {/* Hero Section */}
       <motion.section

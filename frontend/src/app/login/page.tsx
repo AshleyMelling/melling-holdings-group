@@ -1,17 +1,15 @@
-import { LoginForm } from "@/components/login-form"
-import Header from "@/components/header";
-import BubblesBackground from "@/components/BubblesBackground";
+import { LoginForm } from "@/components/login-form";
+import SiteHeader from "@/components/SiteHeader";
 
 export default function Page() {
   return (
     <div className="relative">
       {/* Background layer */}
-      <div className="absolute inset-0 z-0">
-      </div>
+      <div className="absolute inset-0 z-0"></div>
       {/* Content layer */}
       <div className="relative z-10 flex flex-col min-h-screen bg-transparent text-foreground">
-        <Header />
-        {/* Hero section */}
+        <SiteHeader mobileMenuOpen={undefined} setMobileMenuOpen={undefined} />
+        {/* Hero section (in this case, the login form) */}
         <main className="flex-grow flex items-center justify-center">
           <div className="w-full max-w-sm">
             <LoginForm />
