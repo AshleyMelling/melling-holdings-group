@@ -62,7 +62,7 @@ export default function SiteHeader({
                     <Bitcoin className="h-6 w-6 text-[#f97316]" />
                   </div>
                 </div>
-                <span className="text-xl font-serif font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#f97316] to-[#fbbf24]">
+                <span className="text-xl font-sans font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#f97316] to-[#fbbf24]">
                   Melling Holdings Group
                 </span>
               </div>

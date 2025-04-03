@@ -100,8 +100,8 @@ const config: Config = {
       },
       // Font families from the new config
       fontFamily: {
-        serif: ["var(--font-playfair)"],
-        sans: ["var(--font-inter)"],
+        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "monospace"],
       },
     },
   },
