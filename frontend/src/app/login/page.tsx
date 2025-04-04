@@ -33,9 +33,6 @@ export default function LoginPage() {
         </div>
       </main>
 
-      {/* Footer */}
-      <Footer />
-
       {/* Global Font Styles */}
       <style jsx global>{`
         .font-sans {
