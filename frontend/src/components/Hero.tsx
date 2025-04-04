@@ -13,9 +13,13 @@ const Hero = forwardRef<HTMLElement>((_, ref) => {
   return (
     <motion.section
       ref={ref}
-      className="relative min-h-screen flex items-center justify-center pb-20 md:pb-32"
+      className="relative min-h-screen flex items-center justify-center pb-20 md:pb-32 overflow-hidden"
       style={{ opacity, scale }}
     >
+      {/* Background Image */}
+      <div className="absolute inset-0 bg-[url('/hero-bg.png')] bg-cover bg-center z-0" />
+
+      {/* Content */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4">
         <div className="mt-16 md:mt-40 max-w-4xl mx-auto text-center space-y-8">
           <motion.div

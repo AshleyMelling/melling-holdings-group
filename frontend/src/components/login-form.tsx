@@ -1,33 +1,25 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
 import { useState } from "react";
+import { motion } from "framer-motion";
+import { ArrowRight, Lock, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/app/context/AuthContext"; // ✅ Adjust path if needed
+import { useAuth } from "@/app/context/AuthContext";
+import Link from "next/link";
 
-export function LoginForm({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+export function LoginForm() {
   const router = useRouter();
-  const { setUser } = useAuth(); // ✅ Use AuthContext
+  const { setUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     try {
       const res = await fetch("/api/login", {
@@ -38,11 +30,10 @@ export function LoginForm({
 
       if (res.ok) {
         const data = await res.json();
-
-        // ✅ Save the token in a cookie
+        // Save the token in a cookie
         document.cookie = `token=${data.access_token}; path=/;`;
 
-        // ✅ Immediately update user context
+        // Immediately update user context
         if (data.user) {
           setUser({
             name: data.user.name,
@@ -50,7 +41,7 @@ export function LoginForm({
           });
         }
 
-        // ✅ Redirect to dashboard
+        // Redirect to dashboard
         router.push("/dashboard");
       } else {
         const errorData = await res.json();
@@ -70,61 +61,109 @@ export function LoginForm({
       console.error("Login error:", err);
       setError("An error occurred during login");
     }
+    setIsLoading(false);
   }
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <div className="backdrop-blur-2xl bg-card/50 border border-border shadow-xl rounded-xl p-10 max-w-2xl mx-auto">
-        <Card className="bg-transparent shadow-none border-none">
-          <CardHeader>
-            <CardTitle>Login to your account</CardTitle>
-            <CardDescription>
-              Enter your email below to login to your account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit}>
-              <div className="flex flex-col gap-6">
-                <div className="grid gap-3">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="m@example.com"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-3">
-                  <div className="flex items-center">
-                    <Label htmlFor="password">Password</Label>
-                  </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                {error && <p className="text-sm text-red-500">{error}</p>}
-                <div className="flex flex-col gap-3">
-                  <Button type="submit" className="w-full">
-                    Login
-                  </Button>
-                </div>
-              </div>
-            </form>
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <Link href="/signup" className="underline underline-offset-4">
-                Sign up
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="space-y-6">
+      <div className="flex justify-center mb-2">
+        <img src="/MHGDark.svg" alt="MHG logo" className="h-10 w-auto" />
       </div>
+      <h2 className="text-center text-2xl font-semibold text-white font-sans">
+        Login to <span className="text-[#f97316]">MHGroup</span>
+      </h2>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#f97316]">
+              <User size={18} />
+            </div>
+            <input
+              type="email"
+              placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-10 py-3 bg-[#ffffff10] border border-[#ffffff20] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316]/50 text-white font-sans placeholder:text-[#f5f5f5]/50"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#f97316]">
+              <Lock size={18} />
+            </div>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-10 py-3 bg-[#ffffff10] border border-[#ffffff20] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316]/50 text-white font-sans placeholder:text-[#f5f5f5]/50"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="remember"
+              className="w-4 h-4 rounded border-[#ffffff20] bg-[#ffffff10] text-[#f97316] focus:ring-[#f97316]/50"
+            />
+            <label
+              htmlFor="remember"
+              className="text-sm text-[#f5f5f5]/70 font-sans"
+            >
+              Remember me
+            </label>
+          </div>
+          <a
+            href="#"
+            className="text-sm text-[#f97316] hover:text-[#fbbf24] transition-colors font-sans"
+          >
+            Forgot password?
+          </a>
+        </div>
+
+        {error && <p className="text-sm text-red-500">{error}</p>}
+
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className="w-full bg-gradient-to-r from-[#f97316] to-[#ea580c] hover:from-[#ea580c] hover:to-[#f97316] text-white shadow-lg shadow-[#f97316]/20 transition-all duration-300 transform hover:scale-105 font-sans py-6"
+        >
+          {isLoading ? (
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{
+                duration: 1,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: "linear",
+              }}
+              className="h-5 w-5 border-2 border-white border-t-transparent rounded-full"
+            />
+          ) : (
+            <>
+              Sign In
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </>
+          )}
+        </Button>
+      </form>
+
+      <p className="text-xs text-center text-[#f5f5f5]/50 font-sans mt-6">
+        By signing in, you agree to our{" "}
+        <a href="#" className="underline hover:text-[#f97316]">
+          Terms of Service
+        </a>{" "}
+        and{" "}
+        <a href="#" className="underline hover:text-[#f97316]">
+          Privacy Policy
+        </a>
+      </p>
     </div>
   );
 }

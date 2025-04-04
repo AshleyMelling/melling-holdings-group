@@ -13,7 +13,7 @@ const About = forwardRef<HTMLElement>((_, ref) => {
           <div className="relative order-2 lg:order-1 mx-auto w-full max-w-sm md:max-w-md lg:max-w-lg aspect-square">
             <div className="absolute inset-0 bg-[#111111] rounded-2xl overflow-hidden border border-[#222222]">
               <img
-                src="/BTCImage.png"
+                src="/BTCImage.gif"
                 alt="A futuristic Bitcoin mountain concept"
                 className="h-full w-full object-cover"
               />

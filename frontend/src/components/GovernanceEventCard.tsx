@@ -46,7 +46,7 @@ export default function GovernanceEventCard({
           </Button>
         </div>
       </div>
-      <div className="absolute left-1/2 transform -translate-x-1/2 z-10">
+      <div className="relative md:absolute md:left-1/2 md:transform md:-translate-x-1/2 z-10">
         <div className="h-12 w-12 rounded-full bg-[#0f0f0f] border-2 border-[#f97316] flex items-center justify-center text-[#f97316]">
           {icon}
         </div>
