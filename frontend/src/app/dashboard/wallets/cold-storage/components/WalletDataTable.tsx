@@ -1,18 +1,17 @@
 "use client";
 
-import * as React from "react";
+import React, { useEffect, useState } from "react";
 import {
   DndContext,
+  closestCenter,
   KeyboardSensor,
   MouseSensor,
   TouchSensor,
-  closestCenter,
   useSensor,
   useSensors,
   DragEndEvent,
   UniqueIdentifier,
 } from "@dnd-kit/core";
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import {
   SortableContext,
   arrayMove,
@@ -22,36 +21,19 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   ColumnDef,
-  ColumnFiltersState,
-  Row,
-  SortingState,
-  VisibilityState,
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  useReactTable,
   getFacetedRowModel,
   getFacetedUniqueValues,
-  useReactTable,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  Row,
+  flexRender,
 } from "@tanstack/react-table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -60,22 +42,32 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { z } from "zod";
-import { walletSchema } from "./schema";
-import { WalletDrawer } from "./WalletDrawer";
-import { AddColdStorageWalletForm } from "./AddColdStorageWalletForm";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import {
   IconChevronsLeft,
   IconChevronLeft,
   IconChevronRight,
   IconChevronsRight,
-  IconLayoutColumns,
 } from "@tabler/icons-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+
+import { walletSchema } from "./schema";
+import { WalletDrawer } from "./WalletDrawer";
+import { AddColdStorageWalletForm } from "./AddColdStorageWalletForm";
+import { z } from "zod";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
 export type Wallet = z.infer<typeof walletSchema>;
 
-// Column definitions for wallets
 const columns: ColumnDef<Wallet>[] = [
   {
     accessorKey: "label",
@@ -120,7 +112,6 @@ const columns: ColumnDef<Wallet>[] = [
   },
 ];
 
-// Draggable row component for reordering
 function DraggableRow({ row }: { row: Row<Wallet> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
@@ -146,32 +137,42 @@ function DraggableRow({ row }: { row: Row<Wallet> }) {
   );
 }
 
-// Main WalletDataTable component with toolbar and pagination
-export function WalletDataTable({ data: initialData }: { data: Wallet[] }) {
-  const [data, setData] = React.useState<Wallet[]>(() => initialData);
-  const [rowSelection, setRowSelection] = React.useState({});
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [pagination, setPagination] = React.useState({
-    pageIndex: 0,
-    pageSize: 10,
-  });
+const WalletDataTable = () => {
+  const [data, setData] = useState<Wallet[]>([]);
+  const [rowSelection, setRowSelection] = useState({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
-  // Set up drag-and-drop sensors
   const sensors = useSensors(
-    useSensor(MouseSensor, {}),
-    useSensor(TouchSensor, {}),
-    useSensor(KeyboardSensor, {})
+    useSensor(MouseSensor),
+    useSensor(TouchSensor),
+    useSensor(KeyboardSensor)
   );
-  const sortableId = React.useId();
-  const dataIds = React.useMemo<UniqueIdentifier[]>(
-    () => data.map(({ id }) => id),
-    [data]
-  );
+
+  const fetchWallets = async () => {
+    try {
+      const res = await fetch("/api/wallets");
+      const wallets = await res.json();
+      const formatted = wallets.map((w: any) => ({
+        id: w.id,
+        label: w.name,
+        address: w.address,
+        balance: w.balance,
+        lastChecked: w.lastChecked,
+        category: "Cold",
+      }));
+      setData(formatted);
+    } catch (err) {
+      console.error("❌ Failed to fetch wallets", err);
+      setData([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchWallets();
+  }, []);
 
   const table = useReactTable({
     data,
@@ -198,49 +199,45 @@ export function WalletDataTable({ data: initialData }: { data: Wallet[] }) {
     getFacetedUniqueValues: getFacetedUniqueValues(),
   });
 
-  function handleDragEnd(event: DragEndEvent) {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (active && over && active.id !== over.id) {
-      setData((oldData) => {
-        const oldIndex = dataIds.indexOf(active.id);
-        const newIndex = dataIds.indexOf(over.id);
-        return arrayMove(oldData, oldIndex, newIndex);
-      });
+    if (active.id !== over?.id) {
+      const oldIndex = data.findIndex((item) => item.id === active.id);
+      const newIndex = data.findIndex((item) => item.id === over?.id);
+      setData((items) => arrayMove(items, oldIndex, newIndex));
     }
-  }
+  };
+
+  const dataIds: UniqueIdentifier[] = data.map((item) => item.id);
 
   return (
     <Tabs
       defaultValue="wallets"
       className="w-full flex-col justify-start gap-6"
     >
-      {/* Toolbar */}
       <div className="flex items-center justify-between px-4 lg:px-6">
-        <Label htmlFor="view-selector" className="sr-only">
-          View
-        </Label>
         <Select defaultValue="wallets">
-          <SelectTrigger
-            className="flex w-fit @4xl/main:hidden"
-            size="sm"
-            id="view-selector"
-          >
+          <SelectTrigger className="flex w-fit @4xl/main:hidden" size="sm">
             <SelectValue placeholder="Select a view" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="wallets">Wallets</SelectItem>
           </SelectContent>
         </Select>
-        {/* Add Wallet Button with onSubmit callback */}
         <AddColdStorageWalletForm
           onSubmit={(newRecord) => {
-            // Update your table state or perform other actions with the new wallet record.
-            console.log("New wallet record:", newRecord);
+            setData((prev) => [
+              ...prev,
+              {
+                ...newRecord,
+                label: newRecord.name,
+                category: "Cold",
+              },
+            ]);
           }}
         />
       </div>
 
-      {/* Main table content */}
       <TabsContent
         value="wallets"
         className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
@@ -251,7 +248,6 @@ export function WalletDataTable({ data: initialData }: { data: Wallet[] }) {
             modifiers={[restrictToVerticalAxis]}
             onDragEnd={handleDragEnd}
             sensors={sensors}
-            id={sortableId}
           >
             <Table>
               <TableHeader className="bg-muted sticky top-0 z-10">
@@ -271,7 +267,7 @@ export function WalletDataTable({ data: initialData }: { data: Wallet[] }) {
                 ))}
               </TableHeader>
               <TableBody className="data-[slot=table-cell]:first:w-8">
-                {table.getRowModel().rows?.length ? (
+                {table.getRowModel().rows.length ? (
                   <SortableContext
                     items={dataIds}
                     strategy={verticalListSortingStrategy}
@@ -295,9 +291,8 @@ export function WalletDataTable({ data: initialData }: { data: Wallet[] }) {
           </DndContext>
         </div>
 
-        {/* Pagination controls */}
         <div className="flex items-center justify-between px-4">
-          <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
+          <div className="hidden text-sm text-muted-foreground lg:flex">
             {table.getFilteredSelectedRowModel().rows.length} of{" "}
             {table.getFilteredRowModel().rows.length} row(s) selected.
           </div>
@@ -308,9 +303,7 @@ export function WalletDataTable({ data: initialData }: { data: Wallet[] }) {
               </Label>
               <Select
                 value={`${table.getState().pagination.pageSize}`}
-                onValueChange={(value) => {
-                  table.setPageSize(Number(value));
-                }}
+                onValueChange={(value) => table.setPageSize(Number(value))}
               >
                 <SelectTrigger size="sm" className="w-20" id="rows-per-page">
                   <SelectValue
@@ -318,15 +311,15 @@ export function WalletDataTable({ data: initialData }: { data: Wallet[] }) {
                   />
                 </SelectTrigger>
                 <SelectContent side="top">
-                  {[10, 20, 30, 40, 50].map((pageSize) => (
-                    <SelectItem key={pageSize} value={`${pageSize}`}>
-                      {pageSize}
+                  {[10, 20, 30, 40, 50].map((size) => (
+                    <SelectItem key={size} value={`${size}`}>
+                      {size}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex w-fit items-center justify-center text-sm font-medium">
+            <div className="text-sm font-medium">
               Page {table.getState().pagination.pageIndex + 1} of{" "}
               {table.getPageCount()}
             </div>
@@ -337,37 +330,30 @@ export function WalletDataTable({ data: initialData }: { data: Wallet[] }) {
                 onClick={() => table.setPageIndex(0)}
                 disabled={!table.getCanPreviousPage()}
               >
-                <span className="sr-only">Go to first page</span>
                 <IconChevronsLeft />
               </Button>
               <Button
                 variant="outline"
                 className="size-8"
-                size="icon"
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
               >
-                <span className="sr-only">Go to previous page</span>
                 <IconChevronLeft />
               </Button>
               <Button
                 variant="outline"
                 className="size-8"
-                size="icon"
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
               >
-                <span className="sr-only">Go to next page</span>
                 <IconChevronRight />
               </Button>
               <Button
                 variant="outline"
                 className="hidden size-8 lg:flex"
-                size="icon"
                 onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                 disabled={!table.getCanNextPage()}
               >
-                <span className="sr-only">Go to last page</span>
                 <IconChevronsRight />
               </Button>
             </div>
@@ -376,4 +362,6 @@ export function WalletDataTable({ data: initialData }: { data: Wallet[] }) {
       </TabsContent>
     </Tabs>
   );
-}
+};
+
+export default WalletDataTable;

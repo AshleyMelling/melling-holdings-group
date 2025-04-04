@@ -465,8 +465,6 @@ export function GovernanceDataTable({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          {/* Add Record */}
-          <AddGovernanceForm/>
         </div>
       </div>
 

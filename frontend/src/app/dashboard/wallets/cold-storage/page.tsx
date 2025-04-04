@@ -1,35 +1,9 @@
-// app/dashboard/wallets/page.tsx
-import React from "react";
-import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { WalletDataTable } from "./components/WalletDataTable";
-import { walletSchema } from "./components/schema";
-import { z } from "zod";
-
-// Example mock data for wallets
-const mockData: z.infer<typeof walletSchema>[] = [
-  {
-    id: 1,
-    label: "Cold Wallet",
-    address: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
-    balance: "1.02 BTC",
-    lastChecked: "2025-04-04 13:00",
-    category: "Cold",
-    notes: "Ledger Nano X",
-  },
-  {
-    id: 2,
-    label: "Hot Wallet",
-    address: "bc1qar0srlr7xfkvy5l643lydnw9re59gtzzwf5mdq",
-    balance: "0.21 BTC",
-    lastChecked: "2025-04-04 13:05",
-    category: "Hot",
-    notes: "Mobile wallet",
-  },
-];
+import { ColdWalletClient } from "./components/ColdWalletClient"; // ✅ import wrapper
 
 export default async function WalletsPage() {
   const cookieStore = await cookies();
@@ -58,7 +32,7 @@ export default async function WalletsPage() {
                 On-Chain Wallet Tracker
               </h1>
               <div className="px-4 lg:px-6">
-                <WalletDataTable data={mockData} />
+                <ColdWalletClient /> {/* ✅ uses client component safely */}
               </div>
             </div>
           </div>
