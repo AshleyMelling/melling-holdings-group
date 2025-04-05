@@ -20,6 +20,7 @@ export type ColdStorageWalletRecord = {
   address: string;
   balance: string;
   lastChecked: string;
+  data: any;
 };
 
 type ColdStorageForm = {
@@ -48,6 +49,7 @@ export function AddColdStorageWalletForm({
   };
 
   const handleLookupAndSave = async () => {
+    console.log("🔥 Submitting form:", form);
     if (!form.name || !form.address) {
       toast.error("Please enter both wallet name and address.");
       return;
@@ -56,6 +58,7 @@ export function AddColdStorageWalletForm({
     try {
       setLoading(true);
 
+      // Step 1: Lookup wallet from Mempool API
       const fetchRes = await fetch(
         "https://www.mellingholdingsgroup.com/api/lookup-wallet",
         {
@@ -75,28 +78,39 @@ export function AddColdStorageWalletForm({
 
       const walletData = await fetchRes.json();
 
+      // Step 2: Save to backend
       const saveRes = await fetch("/api/cold-storage-wallets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(walletData),
       });
 
+      // ✅ Handle duplicates
+      if (saveRes.status === 409) {
+        toast.error("⚠️ Wallet already exists (duplicate name or address)");
+        console.warn("⚠️ Wallet already exists");
+        return; // 👈 prevent further execution
+      }
+
       if (!saveRes.ok) {
         throw new Error("Error saving wallet data to backend");
       }
 
+      // Step 3: If success, notify + add to table
       const savedRecord: ColdStorageWalletRecord = await saveRes.json();
       onSubmit(savedRecord);
-      toast.success("✅ Cold Storage wallet saved.");
+      toast.success("✅ Wallet saved successfully!");
       setForm(initialForm);
       setOpen(false);
     } catch (error: any) {
-      console.error("❌ Wallet fetch failed:", error);
+      console.error("❌ Save error:", error);
       toast.error(error.message || "Unexpected error");
     } finally {
       setLoading(false);
     }
   };
+
+
 
 
   return (

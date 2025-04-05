@@ -67,8 +67,8 @@ import { AddColdStorageWalletForm } from "./AddColdStorageWalletForm";
 import { z } from "zod";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { Trash2 } from "lucide-react";
-
 import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export type Wallet = z.infer<typeof walletSchema>;
 
@@ -222,6 +222,7 @@ const WalletDataTable = () => {
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    autoResetPageIndex: false,
   });
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -254,6 +255,68 @@ const WalletDataTable = () => {
 
   return (
     <Tabs defaultValue="wallets" className="w-full flex-col gap-6">
+      <div className="flex items-center justify-between px-4 lg:px-6">
+        <Select defaultValue="wallets">
+          <SelectTrigger className="flex w-fit @4xl/main:hidden" size="sm">
+            <SelectValue placeholder="Select a view" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="wallets">Wallets</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <AddColdStorageWalletForm
+          onSubmit={async (newRecord) => {
+            const addressAlreadyExists = data.some(
+              (wallet) =>
+                wallet.address.trim().toLowerCase() ===
+                newRecord.address.trim().toLowerCase()
+            );
+
+            const nameAlreadyExists = data.some(
+              (wallet) =>
+                wallet.label.trim().toLowerCase() ===
+                newRecord.name.trim().toLowerCase()
+            );
+
+            if (addressAlreadyExists || nameAlreadyExists) {
+              toast.error("Wallet already exists (by address or name).");
+              return;
+            }
+
+            try {
+              const res = await fetch("/api/cold-storage-wallets", {
+                method: "POST",
+                body: JSON.stringify(newRecord), // ✅ FIXED
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              });
+
+              if (!res.ok) {
+                if (res.status === 409) {
+                  toast.error("Wallet already exists (name or address)");
+                } else {
+                  toast.error("Error saving wallet data to backend");
+                }
+                return;
+              }
+
+              const saved = await res.json();
+              setData((prev) => [
+                ...prev,
+                { ...saved, label: saved.name, category: "Cold" },
+              ]);
+              toast.success("Wallet saved to backend!");
+               // pass back to parent to update UI
+            } catch (err) {
+              toast.error("Network error while saving wallet");
+              console.error("❌ Save error:", err);
+            }
+          }}
+        />
+      </div>
+
       <TabsContent
         value="wallets"
         className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
@@ -305,6 +368,82 @@ const WalletDataTable = () => {
               </TableBody>
             </Table>
           </DndContext>
+        </div>
+
+        <div className="flex items-center justify-between px-4">
+          <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
+            {table.getFilteredSelectedRowModel().rows.length} of{" "}
+            {table.getFilteredRowModel().rows.length} row(s) selected.
+          </div>
+
+          <div className="flex w-full items-center gap-8 lg:w-fit">
+            <div className="hidden items-center gap-2 lg:flex">
+              <Label htmlFor="rows-per-page" className="text-sm font-medium">
+                Rows per page
+              </Label>
+              <Select
+                value={`${table.getState().pagination.pageSize}`}
+                onValueChange={(value) => table.setPageSize(Number(value))}
+              >
+                <SelectTrigger size="sm" className="w-20" id="rows-per-page">
+                  <SelectValue
+                    placeholder={table.getState().pagination.pageSize}
+                  />
+                </SelectTrigger>
+                <SelectContent side="top">
+                  {[10, 20, 30, 40, 50].map((pageSize) => (
+                    <SelectItem key={pageSize} value={`${pageSize}`}>
+                      {pageSize}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex w-fit items-center justify-center text-sm font-medium">
+              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              {table.getPageCount()}
+            </div>
+
+            <div className="ml-auto flex items-center gap-2 lg:ml-0">
+              <Button
+                variant="outline"
+                className="hidden h-8 w-8 p-0 lg:flex"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <span className="sr-only">First page</span>
+                <IconChevronsLeft />
+              </Button>
+              <Button
+                variant="outline"
+                className="size-8"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <span className="sr-only">Previous</span>
+                <IconChevronLeft />
+              </Button>
+              <Button
+                variant="outline"
+                className="size-8"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                <span className="sr-only">Next</span>
+                <IconChevronRight />
+              </Button>
+              <Button
+                variant="outline"
+                className="hidden size-8 lg:flex"
+                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                disabled={!table.getCanNextPage()}
+              >
+                <span className="sr-only">Last page</span>
+                <IconChevronsRight />
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* ✅ Confirm Delete Dialog */}

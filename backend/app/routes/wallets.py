@@ -45,8 +45,18 @@ def fetch_wallet_data(req: WalletLookupRequest):
         "data": data,
     }
 
+# in your FastAPI route (save_wallet)
 @router.post("/cold-storage-wallets", response_model=ColdStorageWalletResponse)
 def save_wallet(payload: ColdStorageWalletCreate, db: Session = Depends(get_db)):
+    # Check for existing address or name
+    existing = db.query(ColdStorageWallet).filter(
+        (ColdStorageWallet.address == payload.address) |
+        (ColdStorageWallet.name == payload.name)
+    ).first()
+
+    if existing:
+        raise HTTPException(status_code=409, detail="Wallet with that name or address already exists")
+
     wallet = ColdStorageWallet(
         name=payload.name,
         address=payload.address,
@@ -58,6 +68,8 @@ def save_wallet(payload: ColdStorageWalletCreate, db: Session = Depends(get_db))
     db.commit()
     db.refresh(wallet)
     return wallet
+
+
 
 @router.get("/wallets", response_model=List[ColdStorageWalletResponse])
 def list_wallets(db: Session = Depends(get_db)):
