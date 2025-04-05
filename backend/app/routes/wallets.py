@@ -64,3 +64,19 @@ def list_wallets(db: Session = Depends(get_db)):
     wallets = db.query(ColdStorageWallet).all()
     print("🔎 Returning wallets:", wallets)
     return wallets
+
+@router.delete("/wallets/{wallet_id}")
+def delete_wallet(wallet_id: int, db: Session = Depends(get_db)):
+    wallet = db.query(ColdStorageWallet).filter(ColdStorageWallet.id == wallet_id).first()
+
+    if not wallet:
+        print(f"❌ Wallet ID {wallet_id} not found.")
+        raise HTTPException(status_code=404, detail="Wallet not found")
+
+    print(f"🗑️ Deleting wallet: ID={wallet.id}, Label={wallet.name}, Address={wallet.address}")
+    db.delete(wallet)
+    db.commit()
+
+    print("✅ Deletion committed.")
+    return {"status": "success", "message": f"Wallet ID {wallet_id} deleted"}
+

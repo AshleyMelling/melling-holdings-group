@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Text
 from app.database import Base
 
 
@@ -20,3 +20,14 @@ class ColdStorageWallet(Base):
     balance = Column(String(100), nullable=False)
     lastChecked = Column(String(100), nullable=False)
     data = Column(String, nullable=True)  # Stored as JSON string
+
+class ColdStorageWallet(Base):
+    __tablename__ = "cold_storage_wallets"
+    __table_args__ = {"extend_existing": True} 
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    address = Column(String, unique=True)
+    balance = Column(String)
+    lastChecked = Column(String)
+    data = Column(Text)

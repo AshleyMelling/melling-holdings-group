@@ -34,6 +34,7 @@ import {
   Row,
   flexRender,
 } from "@tanstack/react-table";
+
 import {
   Table,
   TableBody,
@@ -65,52 +66,11 @@ import { WalletDrawer } from "./WalletDrawer";
 import { AddColdStorageWalletForm } from "./AddColdStorageWalletForm";
 import { z } from "zod";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { Trash2 } from "lucide-react";
+
+import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog";
 
 export type Wallet = z.infer<typeof walletSchema>;
-
-const columns: ColumnDef<Wallet>[] = [
-  {
-    accessorKey: "label",
-    header: () => <div className="text-left px-2">Label</div>,
-    cell: ({ row }) => (
-      <div className="text-left px-2">
-        <WalletDrawer item={row.original} />
-      </div>
-    ),
-  },
-  {
-    accessorKey: "address",
-    header: () => <div className="text-left text-sm">Address</div>,
-    cell: ({ row }) => (
-      <div className="text-left text-sm">{row.original.address}</div>
-    ),
-  },
-  {
-    accessorKey: "balance",
-    header: () => <div className="text-right text-sm">Balance</div>,
-    cell: ({ row }) => (
-      <div className="text-right text-sm">{row.original.balance}</div>
-    ),
-  },
-  {
-    accessorKey: "lastChecked",
-    header: () => <div className="text-right text-sm">Last Checked</div>,
-    cell: ({ row }) => (
-      <div className="text-right text-sm">{row.original.lastChecked}</div>
-    ),
-  },
-  {
-    accessorKey: "category",
-    header: () => <div className="text-center text-sm">Category</div>,
-    cell: ({ row }) => (
-      <div className="text-center text-sm">
-        <Badge variant="outline" className="text-muted-foreground px-1.5">
-          {row.original.category}
-        </Badge>
-      </div>
-    ),
-  },
-];
 
 function DraggableRow({ row }: { row: Row<Wallet> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
@@ -119,14 +79,13 @@ function DraggableRow({ row }: { row: Row<Wallet> }) {
 
   return (
     <TableRow
-      data-state={row.getIsSelected() ? "selected" : undefined}
-      data-dragging={isDragging}
       ref={setNodeRef}
-      className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
+      data-dragging={isDragging}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
       }}
+      className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
     >
       {row.getVisibleCells().map((cell) => (
         <TableCell key={cell.id}>
@@ -139,6 +98,9 @@ function DraggableRow({ row }: { row: Row<Wallet> }) {
 
 const WalletDataTable = () => {
   const [data, setData] = useState<Wallet[]>([]);
+  const [walletToDelete, setWalletToDelete] = useState<Wallet | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -174,6 +136,69 @@ const WalletDataTable = () => {
     fetchWallets();
   }, []);
 
+  // ✅ Columns must be defined after hooks, before useReactTable
+  const columns: ColumnDef<Wallet>[] = [
+    {
+      accessorKey: "label",
+      header: () => <div className="text-left px-2">Label</div>,
+      cell: ({ row }) => (
+        <div className="text-left px-2">
+          <WalletDrawer item={row.original} />
+        </div>
+      ),
+    },
+    {
+      accessorKey: "address",
+      header: () => <div className="text-left text-sm">Address</div>,
+      cell: ({ row }) => (
+        <div className="text-left text-sm">{row.original.address}</div>
+      ),
+    },
+    {
+      accessorKey: "balance",
+      header: () => <div className="text-right text-sm">Balance</div>,
+      cell: ({ row }) => (
+        <div className="text-right text-sm">{row.original.balance}</div>
+      ),
+    },
+    {
+      accessorKey: "lastChecked",
+      header: () => <div className="text-right text-sm">Last Checked</div>,
+      cell: ({ row }) => (
+        <div className="text-right text-sm">{row.original.lastChecked}</div>
+      ),
+    },
+    {
+      accessorKey: "category",
+      header: () => <div className="text-center text-sm">Category</div>,
+      cell: ({ row }) => (
+        <div className="text-center text-sm">
+          <Badge variant="outline" className="text-muted-foreground px-1.5">
+            {row.original.category}
+          </Badge>
+        </div>
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right text-sm">Actions</div>,
+      cell: ({ row }) => (
+        <div className="text-right pr-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setWalletToDelete(row.original);
+              setShowDeleteDialog(true);
+            }}
+          >
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   const table = useReactTable({
     data,
     columns,
@@ -208,36 +233,27 @@ const WalletDataTable = () => {
     }
   };
 
+  const handleDelete = async (walletId: string) => {
+    try {
+      const res = await fetch(`/api/wallets/${walletId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error("Delete failed");
+
+      setData((prev) =>
+        prev.filter((wallet) => wallet.id.toString() !== walletId)
+      );
+      setShowDeleteDialog(false);
+    } catch (err) {
+      console.error("❌ Delete error:", err);
+    }
+  };
+
   const dataIds: UniqueIdentifier[] = data.map((item) => item.id);
 
   return (
-    <Tabs
-      defaultValue="wallets"
-      className="w-full flex-col justify-start gap-6"
-    >
-      <div className="flex items-center justify-between px-4 lg:px-6">
-        <Select defaultValue="wallets">
-          <SelectTrigger className="flex w-fit @4xl/main:hidden" size="sm">
-            <SelectValue placeholder="Select a view" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="wallets">Wallets</SelectItem>
-          </SelectContent>
-        </Select>
-        <AddColdStorageWalletForm
-          onSubmit={(newRecord) => {
-            setData((prev) => [
-              ...prev,
-              {
-                ...newRecord,
-                label: newRecord.name,
-                category: "Cold",
-              },
-            ]);
-          }}
-        />
-      </div>
-
+    <Tabs defaultValue="wallets" className="w-full flex-col gap-6">
       <TabsContent
         value="wallets"
         className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
@@ -266,7 +282,7 @@ const WalletDataTable = () => {
                   </TableRow>
                 ))}
               </TableHeader>
-              <TableBody className="data-[slot=table-cell]:first:w-8">
+              <TableBody>
                 {table.getRowModel().rows.length ? (
                   <SortableContext
                     items={dataIds}
@@ -291,74 +307,39 @@ const WalletDataTable = () => {
           </DndContext>
         </div>
 
-        <div className="flex items-center justify-between px-4">
-          <div className="hidden text-sm text-muted-foreground lg:flex">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
-          </div>
-          <div className="flex w-full items-center gap-8 lg:w-fit">
-            <div className="hidden items-center gap-2 lg:flex">
-              <Label htmlFor="rows-per-page" className="text-sm font-medium">
-                Rows per page
-              </Label>
-              <Select
-                value={`${table.getState().pagination.pageSize}`}
-                onValueChange={(value) => table.setPageSize(Number(value))}
-              >
-                <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-                  <SelectValue
-                    placeholder={table.getState().pagination.pageSize}
-                  />
-                </SelectTrigger>
-                <SelectContent side="top">
-                  {[10, 20, 30, 40, 50].map((size) => (
-                    <SelectItem key={size} value={`${size}`}>
-                      {size}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        {/* ✅ Confirm Delete Dialog */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogTitle>Confirm Delete</DialogTitle>
+            <div className="flex flex-col space-y-4">
+              <p>
+                Are you sure you want to delete{" "}
+                <strong>{walletToDelete?.label}</strong>?
+              </p>
+              <p className="text-sm text-muted-foreground">
+                This action cannot be undone.
+              </p>
             </div>
-            <div className="text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount()}
-            </div>
-            <div className="ml-auto flex items-center gap-2 lg:ml-0">
+            <DialogFooter>
               <Button
-                variant="outline"
-                className="hidden h-8 w-8 p-0 lg:flex"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
+                variant="secondary"
+                onClick={() => setShowDeleteDialog(false)}
               >
-                <IconChevronsLeft />
+                Cancel
               </Button>
               <Button
-                variant="outline"
-                className="size-8"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
+                variant="destructive"
+                onClick={() => {
+                  if (walletToDelete) {
+                    handleDelete(walletToDelete.id.toString());
+                  }
+                }}
               >
-                <IconChevronLeft />
+                Delete
               </Button>
-              <Button
-                variant="outline"
-                className="size-8"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                <IconChevronRight />
-              </Button>
-              <Button
-                variant="outline"
-                className="hidden size-8 lg:flex"
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
-              >
-                <IconChevronsRight />
-              </Button>
-            </div>
-          </div>
-        </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </TabsContent>
     </Tabs>
   );
