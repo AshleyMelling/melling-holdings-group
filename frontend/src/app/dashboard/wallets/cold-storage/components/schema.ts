@@ -9,4 +9,5 @@ export const walletSchema = z.object({
   lastChecked: z.string(), // ISO timestamp string
   category: z.enum(["Cold", "Hot", "Exchange", "Business", "Personal"]),
   notes: z.string().optional(),
+  data: z.any().optional(), // <-- Add this line
 });

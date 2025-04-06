@@ -48,70 +48,60 @@ export function AddColdStorageWalletForm({
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleLookupAndSave = async () => {
-    console.log("🔥 Submitting form:", form);
-    if (!form.name || !form.address) {
-      toast.error("Please enter both wallet name and address.");
-      return;
-    }
+ const handleLookupAndSave = async () => {
+   if (!form.address) {
+     toast.error("Please enter address.");
+     return;
+   }
 
-    try {
-      setLoading(true);
+   try {
+     setLoading(true);
 
-      // Step 1: Lookup wallet from Mempool API
-      const fetchRes = await fetch(
-        "https://www.mellingholdingsgroup.com/api/lookup-wallet",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: form.name,
-            address: form.address,
-          }),
-        }
-      );
+     const fetchRes = await fetch("/api/lookup-wallet", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify({
+         name: form.name,
+         address: form.address,
+       }),
+     });
 
-      if (!fetchRes.ok) {
-        const error = await fetchRes.json();
-        throw new Error(error.detail || "Failed to fetch wallet info");
-      }
+     if (!fetchRes.ok) {
+       const error = await fetchRes.json();
+       throw new Error(error.detail || "Failed to fetch wallet info");
+     }
 
-      const walletData = await fetchRes.json();
+     const walletData = await fetchRes.json();
 
-      // Step 2: Save to backend
-      const saveRes = await fetch("/api/cold-storage-wallets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(walletData),
-      });
+     const saveRes = await fetch("/api/cold-storage-wallets", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify(walletData),
+     });
 
-      // ✅ Handle duplicates
-      if (saveRes.status === 409) {
-        toast.error("⚠️ Wallet already exists (duplicate name or address)");
-        console.warn("⚠️ Wallet already exists");
-        return; // 👈 prevent further execution
-      }
+     if (!saveRes.ok) {
+       const errorText = await saveRes.text();
+       console.error("Save wallet backend error:", saveRes.status, errorText);
+       throw new Error(errorText || "Error saving wallet data to backend");
+     }
 
-      if (!saveRes.ok) {
-        throw new Error("Error saving wallet data to backend");
-      }
+     const savedRecord: ColdStorageWalletRecord = await saveRes.json();
 
-      // Step 3: If success, notify + add to table
-      const savedRecord: ColdStorageWalletRecord = await saveRes.json();
-      onSubmit(savedRecord);
-      toast.success("✅ Wallet saved successfully!");
-      setForm(initialForm);
-      setOpen(false);
-    } catch (error: any) {
-      console.error("❌ Save error:", error);
-      toast.error(error.message || "Unexpected error");
-    } finally {
-      setLoading(false);
-    }
-  };
+     // Add this check to avoid duplicates
+     if (savedRecord) {
+       onSubmit(savedRecord);
+     }
 
-
-
+     toast.success("✅ Cold Storage wallet saved.");
+     setForm(initialForm);
+     setOpen(false);
+   } catch (error: any) {
+     console.error("❌ Wallet fetch failed:", error);
+     toast.error(error.message || "Unexpected error");
+   } finally {
+     setLoading(false);
+   }
+ };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

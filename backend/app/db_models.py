@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, Integer, String, Text, Boolean
 from app.database import Base
 
 class User(Base):
@@ -18,3 +18,4 @@ class ColdStorageWallet(Base):
     balance = Column(String(100), nullable=False)
     lastChecked = Column(String(100), nullable=False)
     data = Column(Text, nullable=True)  # JSON string
+    

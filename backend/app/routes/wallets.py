@@ -4,6 +4,9 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from typing import List
+from fastapi import Path
+import time
+from app.models import WalletLookupRequest 
 
 from app.models import (
     WalletLookupRequest,
@@ -11,51 +14,90 @@ from app.models import (
     ColdStorageWalletResponse,
 )
 from app.db_models import ColdStorageWallet
-from app.database import SessionLocal
+from app.dependencies import get_db
+
 
 router = APIRouter()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+from fastapi import Depends
+
+
+import json
+import requests
+from datetime import datetime
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from app.models import WalletLookupRequest
+from app.db_models import ColdStorageWallet
+from app.dependencies import get_db
+import time
+
+router = APIRouter()
 
 @router.post("/lookup-wallet")
-def fetch_wallet_data(req: WalletLookupRequest):
-    url = f"https://mempool.space/api/address/{req.address}"
-    res = requests.get(url)
+def fetch_wallet_data(req: WalletLookupRequest, db: Session = Depends(get_db)):
+    base_url = f"https://mempool.space/api/address/{req.address}"
 
-    if res.status_code != 200:
+    try:
+        res_address = requests.get(base_url, timeout=10)
+        res_utxo = requests.get(base_url + "/utxo", timeout=10)
+        res_txs = requests.get(base_url + "/txs", timeout=10)
+        res_txs_chain = requests.get(base_url + "/txs/chain", timeout=10)
+        res_txs_mempool = requests.get(base_url + "/txs/mempool", timeout=10)
+    except requests.RequestException:
+        raise HTTPException(status_code=503, detail="Failed to reach mempool.space")
+
+    if res_address.status_code != 200:
         raise HTTPException(status_code=404, detail="Wallet not found")
 
-    data = res.json()
-    funded = data["chain_stats"]["funded_txo_sum"]
-    spent = data["chain_stats"]["spent_txo_sum"]
+    # Load data safely
+    try:
+        full_data = {
+            **res_address.json(),
+            "utxos": res_utxo.json() if res_utxo.ok else [],
+            "txs": res_txs.json() if res_txs.ok else [],
+            "txs_chain": res_txs_chain.json() if res_txs_chain.ok else [],
+            "txs_mempool": res_txs_mempool.json() if res_txs_mempool.ok else [],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to parse data: {e}")
+
+    # Calculate balance
+    chain_stats = full_data["chain_stats"]
+    funded = chain_stats.get("funded_txo_sum", 0)
+    spent = chain_stats.get("spent_txo_sum", 0)
     balance_sats = funded - spent
     balance_btc = round(balance_sats / 1e8, 8)
     now = datetime.utcnow().isoformat()
+
+    # Update DB
+    wallet = db.query(ColdStorageWallet).filter_by(address=req.address).first()
+    if wallet:
+        wallet.balance = str(balance_btc)
+        wallet.lastChecked = now
+        wallet.data = json.dumps(full_data)
+        db.commit()
+        db.refresh(wallet)
 
     return {
         "name": req.name,
         "address": req.address,
         "balance": str(balance_btc),
         "lastChecked": now,
-        "data": data,
+        "data": full_data
     }
+
 
 # in your FastAPI route (save_wallet)
 @router.post("/cold-storage-wallets", response_model=ColdStorageWalletResponse)
 def save_wallet(payload: ColdStorageWalletCreate, db: Session = Depends(get_db)):
-    # Check for existing address or name
+    # Check for existing wallet with the same address only
     existing = db.query(ColdStorageWallet).filter(
-        (ColdStorageWallet.address == payload.address) |
-        (ColdStorageWallet.name == payload.name)
+        ColdStorageWallet.address == payload.address
     ).first()
 
     if existing:
-        raise HTTPException(status_code=409, detail="Wallet with that name or address already exists")
+        raise HTTPException(status_code=409, detail="Wallet with that address already exists")
 
     wallet = ColdStorageWallet(
         name=payload.name,
@@ -68,8 +110,6 @@ def save_wallet(payload: ColdStorageWalletCreate, db: Session = Depends(get_db))
     db.commit()
     db.refresh(wallet)
     return wallet
-
-
 
 @router.get("/wallets", response_model=List[ColdStorageWalletResponse])
 def list_wallets(db: Session = Depends(get_db)):
@@ -92,3 +132,22 @@ def delete_wallet(wallet_id: int, db: Session = Depends(get_db)):
     print("✅ Deletion committed.")
     return {"status": "success", "message": f"Wallet ID {wallet_id} deleted"}
 
+from fastapi import Path
+
+@router.patch("/wallets/{wallet_id}", response_model=ColdStorageWalletResponse)
+def update_wallet(wallet_id: int, payload: ColdStorageWalletCreate, db: Session = Depends(get_db)):
+    wallet = db.query(ColdStorageWallet).filter(ColdStorageWallet.id == wallet_id).first()
+
+    if not wallet:
+        raise HTTPException(status_code=404, detail="Wallet not found")
+
+    wallet.name = payload.name
+    wallet.address = payload.address
+    wallet.balance = payload.balance
+    wallet.lastChecked = payload.lastChecked
+    wallet.data = json.dumps(payload.data)
+
+    db.commit()
+    db.refresh(wallet)
+
+    return wallet
