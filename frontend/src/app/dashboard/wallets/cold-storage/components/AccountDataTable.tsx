@@ -15,13 +15,10 @@ import {
   ColumnDef,
   useReactTable,
   getCoreRowModel,
-  getSortedRowModel,
   flexRender,
-  SortingState,
 } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { AccountDrawer } from "./AccountDrawer";
-import { ChevronUp, ChevronDown } from "lucide-react";
 
 export type WalletSummary = {
   label: string;
@@ -42,7 +39,6 @@ export type AccountWithDetails = {
 const AccountDataTable = () => {
   const [data, setData] = useState<AccountWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [sorting, setSorting] = useState<SortingState>([]);
 
   const fetchAndAggregate = async () => {
     setIsLoading(true);
@@ -119,52 +115,16 @@ const AccountDataTable = () => {
   const columns: ColumnDef<AccountWithDetails>[] = [
     {
       accessorKey: "account",
-      header: ({ column }) => (
-        <div
-          className="text-left px-2 cursor-pointer select-none"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Account
-          {column.getIsSorted() === "asc" ? (
-            <ChevronUp className="inline w-4 h-4 ml-1" />
-          ) : column.getIsSorted() === "desc" ? (
-            <ChevronDown className="inline w-4 h-4 ml-1" />
-          ) : null}
-        </div>
-      ),
+      header: "Account",
       cell: ({ row }) => <AccountDrawer account={row.original} />,
     },
     {
       accessorKey: "walletCount",
-      header: ({ column }) => (
-        <div
-          className="text-left px-2 cursor-pointer select-none"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Wallet Count
-          {column.getIsSorted() === "asc" ? (
-            <ChevronUp className="inline w-4 h-4 ml-1" />
-          ) : column.getIsSorted() === "desc" ? (
-            <ChevronDown className="inline w-4 h-4 ml-1" />
-          ) : null}
-        </div>
-      ),
+      header: "Wallet Count",
     },
     {
       accessorKey: "totalBTC",
-      header: ({ column }) => (
-        <div
-          className="text-left px-2 cursor-pointer select-none"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Total BTC
-          {column.getIsSorted() === "asc" ? (
-            <ChevronUp className="inline w-4 h-4 ml-1" />
-          ) : column.getIsSorted() === "desc" ? (
-            <ChevronDown className="inline w-4 h-4 ml-1" />
-          ) : null}
-        </div>
-      ),
+      header: "Total BTC",
       cell: ({ getValue }) => Number(getValue()).toFixed(7),
     },
   ];
@@ -172,10 +132,7 @@ const AccountDataTable = () => {
   const table = useReactTable({
     data,
     columns,
-    state: { sorting },
-    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
   });
 
   return (
