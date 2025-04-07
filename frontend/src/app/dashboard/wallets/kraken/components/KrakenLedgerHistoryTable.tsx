@@ -119,17 +119,13 @@ export default function KrakenLedgerHistoryTable() {
   );
 
   const fetchLedgers = async () => {
-    const token = getCookie("token");
-    if (!token) {
-      console.error("No token in cookies");
-      return;
-    }
     setIsLoading(true);
     try {
       const res = await fetch("/api/kraken/history/ledgers", {
+        cache: "no-store",
+        credentials: "include", // Sends the cookie automatically
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
       });
       const result = await res.json();
@@ -137,10 +133,12 @@ export default function KrakenLedgerHistoryTable() {
       setData(result);
     } catch (err) {
       console.error("❌ Failed to fetch Kraken ledgers", err);
+      setData([]);
     } finally {
       setIsLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchLedgers();

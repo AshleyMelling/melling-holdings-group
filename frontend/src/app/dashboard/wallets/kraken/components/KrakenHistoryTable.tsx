@@ -125,23 +125,18 @@ export default function KrakenTradeHistoryTable() {
 
   // Fetch Kraken Trade History from your backend API
   const fetchTrades = async () => {
-    const token = getCookie("token");
-    if (!token) {
-      console.error("No authentication token available in cookies");
-      return;
-    }
     setIsLoading(true);
     try {
       const res = await fetch("/api/kraken/history/trades", {
         cache: "no-store",
+        credentials: "include", // Ensure cookies are sent automatically
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
       });
       const result = await res.json();
       console.log("Fetched Kraken trades:", result);
-      // Assuming backend returns an array of KrakenTrade objects
+      // Assuming result is an array of trade objects
       setData(result);
     } catch (err) {
       console.error("❌ Failed to fetch Kraken trades", err);
@@ -150,6 +145,7 @@ export default function KrakenTradeHistoryTable() {
       setIsLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchTrades();

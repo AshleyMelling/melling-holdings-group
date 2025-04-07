@@ -121,20 +121,13 @@ const KrakenDataTable = () => {
 
   // Fetch Kraken data from your backend API and transform it into an array
   const fetchKrakenData = async () => {
-    // Retrieve token from cookies using our helper function
-    const token = getCookie("token");
-    if (!token) {
-      console.error("No authentication token available in cookies");
-      return;
-    }
-
     setIsLoading(true); // Start loading
     try {
       const res = await fetch("/api/kraken/balance", {
         cache: "no-store",
+        credentials: "include", // This sends the HttpOnly cookie
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
       });
       const result = await res.json();
@@ -154,6 +147,7 @@ const KrakenDataTable = () => {
       setIsLoading(false); // End loading
     }
   };
+
 
   // Fetch data on mount
   useEffect(() => {

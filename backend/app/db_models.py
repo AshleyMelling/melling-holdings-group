@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Float
 from datetime import datetime
 from app.database import Base
 
@@ -27,3 +27,25 @@ class KrakenWallet(Base):
     asset = Column(String(50), primary_key=True, index=True)
     balance = Column(String(100), nullable=False)
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class KrakenTrade(Base):
+    __tablename__ = "kraken_trades"
+
+    id = Column(String, primary_key=True)
+    asset_pair = Column(String)
+    order_txid = Column(String)
+    cost = Column(String)
+    fee = Column(String)
+    vol = Column(String)
+    time = Column(Float, index=True)  # Used for incremental sync
+
+class KrakenLedger(Base):
+    __tablename__ = "kraken_ledgers"
+
+    id = Column(String, primary_key=True)
+    type = Column(String)
+    asset = Column(String)
+    amount = Column(String)
+    fee = Column(String)
+    time = Column(Float, index=True)  # Used for incremental sync

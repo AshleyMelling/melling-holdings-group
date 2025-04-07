@@ -10,6 +10,7 @@ from app.routes import wallets
 from app.routes.kraken import router as kraken_router
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.tasks import update_kraken_data  # Our background task function
+from app.routes import kraken_history
 
 app = FastAPI()
 
@@ -31,7 +32,7 @@ app.include_router(protected_router, prefix="/api")
 app.include_router(wallets_router, prefix="/api")  # Exposes /api/fetch-wallet-data and /api/cold-storage-wallets
 app.include_router(wallets.router, prefix="/api")
 app.include_router(kraken_router, prefix="/api")  # Exposes /api/kraken/balance
-
+app.include_router(kraken_history.router, prefix="/api")  # Exposes /api/kraken/history/trades and /api/kraken/history/ledgers
 # Scheduler setup
 scheduler = BackgroundScheduler()
 
