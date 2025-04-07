@@ -1,4 +1,3 @@
-// types/account.ts
 export type WalletSummary = {
   label: string;
   balance: number;
@@ -12,4 +11,5 @@ export type AccountWithDetails = {
   largestWallet: WalletSummary;
   smallestWallet: WalletSummary;
   totalUnconfirmedTxs: number;
+  wallets: WalletSummary[]; // <-- This line fixes the error
 };

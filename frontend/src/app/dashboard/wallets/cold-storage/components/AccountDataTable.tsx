@@ -33,6 +33,7 @@ export type AccountWithDetails = {
   largestWallet: WalletSummary;
   smallestWallet: WalletSummary;
   totalUnconfirmedTxs: number;
+  wallets: WalletSummary[];
 };
 
 const AccountDataTable = () => {
@@ -68,32 +69,34 @@ const AccountDataTable = () => {
             largestWallet: { label: wallet.label, balance: wallet.balance },
             smallestWallet: { label: wallet.label, balance: wallet.balance },
             totalUnconfirmedTxs: 0,
+            wallets: [],
           };
         }
 
-        const group = grouped[account];
-        group.walletCount += 1;
-        group.totalBTC += wallet.balance;
+        grouped[account].walletCount++;
+        grouped[account].totalBTC += wallet.balance;
+        grouped[account].wallets.push({
+          label: wallet.label,
+          balance: wallet.balance,
+        });
+        grouped[account].totalUnconfirmedTxs += wallet.unconfirmedTxs;
 
-        if (wallet.balance > group.largestWallet.balance) {
-          group.largestWallet = {
+        if (wallet.balance > grouped[account].largestWallet.balance) {
+          grouped[account].largestWallet = {
             label: wallet.label,
             balance: wallet.balance,
           };
         }
 
-        if (wallet.balance < group.smallestWallet.balance) {
-          group.smallestWallet = {
+        if (wallet.balance < grouped[account].smallestWallet.balance) {
+          grouped[account].smallestWallet = {
             label: wallet.label,
             balance: wallet.balance,
           };
         }
 
-        group.totalUnconfirmedTxs += wallet.unconfirmedTxs || 0;
-      }
-
-      for (const group of Object.values(grouped)) {
-        group.averageBalance = group.totalBTC / group.walletCount;
+        grouped[account].averageBalance =
+          grouped[account].totalBTC / grouped[account].walletCount;
       }
 
       setData(Object.values(grouped));
@@ -122,7 +125,7 @@ const AccountDataTable = () => {
     {
       accessorKey: "totalBTC",
       header: "Total BTC",
-      cell: (info) => Number(info.getValue()).toFixed(8),
+      cell: ({ getValue }) => Number(getValue()).toFixed(7),
     },
   ];
 
@@ -143,8 +146,7 @@ const AccountDataTable = () => {
         >
           {isLoading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Refreshing...
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Refreshing...
             </>
           ) : (
             "Refresh"

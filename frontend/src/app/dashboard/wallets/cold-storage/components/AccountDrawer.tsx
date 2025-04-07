@@ -16,16 +16,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { LabelWithValue } from "@/components/ui/display-utils";
 
+export type WalletSummary = {
+  label: string;
+  balance: number;
+};
+
 export type AccountWithDetails = {
   account: string;
   walletCount: number;
   totalBTC: number;
   averageBalance: number;
-  largestWallet: { label: string; balance: number };
-  smallestWallet: { label: string; balance: number };
+  largestWallet: WalletSummary;
+  smallestWallet: WalletSummary;
   totalUnconfirmedTxs: number;
-  lastUpdated?: string;
-  notes?: string;
+  wallets: WalletSummary[];
 };
 
 export function AccountDrawer({ account }: { account: AccountWithDetails }) {
@@ -78,15 +82,25 @@ export function AccountDrawer({ account }: { account: AccountWithDetails }) {
               label="Total Unconfirmed TXs"
               value={account.totalUnconfirmedTxs.toString()}
             />
-            {account.lastUpdated && (
-              <LabelWithValue
-                label="Last Updated"
-                value={new Date(account.lastUpdated).toLocaleString()}
-              />
-            )}
-            {account.notes && (
-              <LabelWithValue label="Notes" value={account.notes} />
-            )}
+
+            <div className="pt-4">
+              <h3 className="font-semibold text-sm mb-2">
+                Wallets in this Account
+              </h3>
+              <div className="space-y-2">
+                {account.wallets.map((wallet, i) => (
+                  <div
+                    key={i}
+                    className="text-muted-foreground border border-border rounded-lg p-3 bg-muted/10"
+                  >
+                    <div className="text-xs">
+                      <strong>{wallet.label}</strong>:{" "}
+                      {wallet.balance.toFixed(8)} BTC
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <DrawerFooter className="px-4">
