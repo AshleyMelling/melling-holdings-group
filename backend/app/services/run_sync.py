@@ -1,4 +1,4 @@
-from app.services.history_sync import sync_history
+from backend.app.services.import_kraken_ledger_from_csv import sync_history
 
 if __name__ == "__main__":
     sync_history()

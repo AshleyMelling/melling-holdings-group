@@ -42,10 +42,13 @@ class KrakenTrade(Base):
 
 class KrakenLedger(Base):
     __tablename__ = "kraken_ledgers"
-
-    id = Column(String, primary_key=True)
+    
+    # New surrogate key for uniqueness
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    # refid is now just a regular field (indexed) so duplicates are allowed
+    refid = Column(String, index=True)
     type = Column(String)
     asset = Column(String)
     amount = Column(String)
     fee = Column(String)
-    time = Column(Float, index=True)  # Used for incremental sync
+    time = Column(Float, index=True)  # Unix timestamp
