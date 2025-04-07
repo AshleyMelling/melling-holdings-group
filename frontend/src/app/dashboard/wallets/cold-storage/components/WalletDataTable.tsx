@@ -67,7 +67,12 @@ import { AddColdStorageWalletForm } from "./AddColdStorageWalletForm";
 import { z } from "zod";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { Trash2 } from "lucide-react";
-import { Dialog, DialogContent, DialogFooter, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import {
@@ -77,7 +82,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Loader2 } from "lucide-react";
-
 
 export type Wallet = z.infer<typeof walletSchema>;
 
@@ -114,7 +118,7 @@ const WalletDataTable = () => {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = useState<SortingState>([
-    { id: "balance", desc: true }, // Default sort by balance, descending
+    { id: "balance", desc: true },
   ]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
 
@@ -138,7 +142,7 @@ const WalletDataTable = () => {
         lastChecked: w.lastChecked,
         category: "Cold",
         notes: w.notes,
-        data: w.data,
+        data: typeof w.data === "string" ? JSON.parse(w.data) : w.data,
       }));
       setData(formatted);
     } catch (err) {
@@ -153,8 +157,6 @@ const WalletDataTable = () => {
     fetchWallets();
   }, []);
 
-  
-  // ✅ Columns must be defined after hooks, before useReactTable
   const columns: ColumnDef<Wallet>[] = [
     {
       accessorKey: "label",
@@ -200,11 +202,6 @@ const WalletDataTable = () => {
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                {/* 
-            Use span (inline) instead of div (block).
-            Also, you can reduce or remove the underline-offset 
-            if it pushes the text up/down.
-          */}
                 <span className="text-sm cursor-pointer underline underline-offset-2 decoration-dotted">
                   {display}
                 </span>
@@ -217,7 +214,32 @@ const WalletDataTable = () => {
         );
       },
     },
-
+    {
+      id: "txCount",
+      accessorFn: (row) => {
+        const chainTx = row.data?.chain_stats?.tx_count ?? 0;
+        const mempoolTx = row.data?.mempool_stats?.tx_count ?? 0;
+        return chainTx + mempoolTx;
+      },
+      header: ({ column }) => (
+        <div
+          className="text-right text-sm cursor-pointer select-none"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Transactions
+          {column.getIsSorted() === "asc" ? (
+            <ChevronUp className="inline w-4 h-4 ml-1" />
+          ) : column.getIsSorted() === "desc" ? (
+            <ChevronDown className="inline w-4 h-4 ml-1" />
+          ) : null}
+        </div>
+      ),
+      cell: ({ getValue }) => (
+        <div className="text-right text-sm">{getValue<number>()}</div>
+      ),
+      enableSorting: true,
+      sortingFn: "basic",
+    },
     {
       accessorKey: "balance",
       header: ({ column }) => (
@@ -235,12 +257,10 @@ const WalletDataTable = () => {
       ),
       cell: ({ row }) => {
         const balance = Number(row.original.balance);
-        // Format balance to 7 decimal places
         const formattedBalance = balance.toFixed(7);
         return <div className="text-right text-sm">{formattedBalance} BTC</div>;
       },
     },
-
     {
       accessorKey: "lastChecked",
       header: ({ column }) => (
@@ -270,7 +290,6 @@ const WalletDataTable = () => {
         return <div className="text-right text-sm">{formatted}</div>;
       },
     },
-
     {
       accessorKey: "category",
       header: () => <div className="text-center text-sm">Category</div>,
@@ -379,10 +398,10 @@ const WalletDataTable = () => {
         updatedWallets.push({
           ...wallet,
           balance: updated.balance,
-          lastChecked: updated.lastChecked,// remove this if not in schema
+          lastChecked: updated.lastChecked,
         });
 
-        await delay(250); // 250ms delay between requests
+        await delay(250);
       } catch (err) {
         console.error(`❌ Wallet ${wallet.address} failed to sync`, err);
       }
@@ -396,20 +415,12 @@ const WalletDataTable = () => {
   const exportToCSV = (data: Wallet[]) => {
     if (!data.length) return;
 
-    // Extract headers from keys of first object (you can customize order if needed)
     const headers = Object.keys(data[0]);
-
-    // Create an array of CSV rows
     const csvRows = [];
-
-    // Add header row
     csvRows.push(headers.join(","));
-
-    // Loop over data and push each row
     for (const wallet of data) {
       const values = headers.map((header) => {
         let cell = (wallet as any)[header];
-        // If the cell contains a comma or a quote, escape it by wrapping in quotes and escaping inner quotes
         if (typeof cell === "string") {
           cell = cell.replace(/"/g, '""');
           if (cell.includes(",") || cell.includes('"')) {
@@ -420,107 +431,90 @@ const WalletDataTable = () => {
       });
       csvRows.push(values.join(","));
     }
-
-    // Join rows with newlines
     const csvString = csvRows.join("\n");
-
-    // Create a Blob from the CSV string
     const blob = new Blob([csvString], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
-
-    // Create a temporary anchor element and trigger a download
     const a = document.createElement("a");
     a.href = url;
     a.download = "wallets.csv";
     a.click();
-
-    // Clean up the URL object after download
     window.URL.revokeObjectURL(url);
   };
-
-
 
   const dataIds: UniqueIdentifier[] = data.map((item) => item.id);
 
   return (
     <Tabs defaultValue="wallets" className="w-full flex-col gap-6">
-      <div className="flex items-center justify-between px-4 lg:px-6">
-        <Select defaultValue="wallets">
-          <SelectTrigger className="flex w-fit @4xl/main:hidden" size="sm">
-            <SelectValue placeholder="Select a view" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="wallets">Wallets</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <AddColdStorageWalletForm
-          onSubmit={async (newRecord) => {
-            // Check in local state only by address
-            const addressAlreadyExists = data.some(
-              (wallet) =>
-                wallet.address.trim().toLowerCase() ===
-                newRecord.address.trim().toLowerCase()
-            );
-
-            if (addressAlreadyExists) {
-              // Silently return if duplicate address found in local state.
-              return;
-            }
-
-            try {
-              const res = await fetch("/api/cold-storage-wallets", {
-                method: "POST",
-                body: JSON.stringify(newRecord),
-                headers: { "Content-Type": "application/json" },
-              });
-
-              if (!res.ok) {
-                // If the backend returns a 409 duplicate error, silently return.
-                if (res.status === 409) {
-                  const error = await res.json();
-                  if (
-                    error.detail.includes(
-                      "Wallet with that address already exists"
-                    )
-                  ) {
-                    return;
-                  }
-                }
-                // For other errors, show a toast error.
-                const error = await res.json();
-                throw new Error(
-                  error.detail || "Error saving wallet data to backend"
+      {/* Updated Top Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 lg:px-6">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:items-center">
+          <div className="w-full sm:w-auto">
+            <AddColdStorageWalletForm
+              onSubmit={async (newRecord) => {
+                const addressAlreadyExists = data.some(
+                  (wallet) =>
+                    wallet.address.trim().toLowerCase() ===
+                    newRecord.address.trim().toLowerCase()
                 );
-              }
+                if (addressAlreadyExists) return;
 
-              const saved = await res.json();
-              setData((prev) => [
-                ...prev,
-                { ...saved, label: saved.name, category: "Cold" },
-              ]);
-              toast.success("Wallet saved to backend!");
-            } catch (err: any) {
-              console.error("❌ Save error:", err);
-              toast.error(err.message || "Network error while saving wallet");
-            }
-          }}
-        />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={syncWalletProfiles}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Syncing...
-            </>
-          ) : (
-            "Sync Wallet Profiles"
-          )}
-        </Button>
+                try {
+                  const res = await fetch("/api/cold-storage-wallets", {
+                    method: "POST",
+                    body: JSON.stringify(newRecord),
+                    headers: { "Content-Type": "application/json" },
+                  });
+
+                  if (!res.ok) {
+                    if (res.status === 409) {
+                      const error = await res.json();
+                      if (
+                        error.detail.includes(
+                          "Wallet with that address already exists"
+                        )
+                      ) {
+                        return;
+                      }
+                    }
+                    const error = await res.json();
+                    throw new Error(
+                      error.detail || "Error saving wallet data to backend"
+                    );
+                  }
+
+                  const saved = await res.json();
+                  setData((prev) => [
+                    ...prev,
+                    { ...saved, label: saved.name, category: "Cold" },
+                  ]);
+                  toast.success("Wallet saved to backend!");
+                } catch (err: any) {
+                  console.error("❌ Save error:", err);
+                  toast.error(
+                    err.message || "Network error while saving wallet"
+                  );
+                }
+              }}
+            />
+          </div>
+          <div className="w-full sm:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={syncWalletProfiles}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                "Sync Wallets"
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
 
       <TabsContent
@@ -652,7 +646,6 @@ const WalletDataTable = () => {
           </div>
         </div>
 
-        {/* ✅ Confirm Delete Dialog */}
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <DialogContent className="sm:max-w-md">
             <DialogTitle>Confirm Delete</DialogTitle>

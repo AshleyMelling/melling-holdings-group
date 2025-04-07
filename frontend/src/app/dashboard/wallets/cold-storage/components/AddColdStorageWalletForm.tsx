@@ -110,7 +110,7 @@ export function AddColdStorageWalletForm({
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Add Cold Storage Wallet</DialogTitle>
+          <DialogTitle>Add Wallet</DialogTitle>
           <DialogDescription>
             Enter your wallet name and address to fetch data and save.
           </DialogDescription>

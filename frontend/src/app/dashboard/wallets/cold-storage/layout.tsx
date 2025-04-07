@@ -1,5 +1,4 @@
 import { ReactNode } from "react";
-import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Toaster } from "sonner"; // Import the Toaster
 
 export default function WalletTrackerLayout({
