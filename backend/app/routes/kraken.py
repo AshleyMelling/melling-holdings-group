@@ -32,9 +32,14 @@ def get_db():
 def get_kraken_balance():
     k = get_kraken_client()
     response = k.query_private("Balance")
+    
     if "error" in response and response["error"]:
+        print("❌ Kraken API Error:", response["error"])  # Debug only
         raise HTTPException(status_code=400, detail=response["error"])
+    
+    print("✅ Store Kraken Response:", response["result"])  # Safe now
     return response["result"]
+
 
 # POST endpoint to store Kraken data into the database
 @router.post("/kraken/store")

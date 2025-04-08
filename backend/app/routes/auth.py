@@ -1,16 +1,16 @@
-from fastapi import APIRouter, HTTPException, Depends
-from app.models import UserSignup, UserLogin  # Import both models
-from app.auth import hash_password
+import os
+from fastapi import APIRouter, HTTPException, Depends, Response
+from app.models import UserSignup, UserLogin
+from app.auth import hash_password, verify_password, create_access_token
 from app.database import SessionLocal
 from app.db_models import User
 from sqlalchemy.orm import Session
 from app.security import get_current_user
-from fastapi.responses import JSONResponse
-from app.auth import verify_password, create_access_token
-from fastapi import Response
-
 
 router = APIRouter()
+
+# Environment flag for dev vs. production
+IS_PROD = os.getenv("ENV") == "production"
 
 def get_db():
     db = SessionLocal()
@@ -21,7 +21,6 @@ def get_db():
 
 @router.post("/signup")
 async def signup(user: UserSignup, db: Session = Depends(get_db)):
-    # Check if the email is already registered
     existing_user = db.query(User).filter(User.email == user.email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -41,16 +40,16 @@ async def login(user: UserLogin, response: Response, db: Session = Depends(get_d
 
     access_token = create_access_token(data={"sub": db_user.email})
 
-    # ✅ Set secure HttpOnly cookie
     response.set_cookie(
         key="token",
         value=access_token,
         httponly=True,
-        secure=True,       # Only over HTTPS
-        samesite="strict", # Strict to prevent CSRF
+        secure=False,  # Make sure it's False for development
+        samesite="lax",
         path="/",
-        max_age=60 * 60 * 24 * 7  # 1 week
+        max_age=60 * 60 * 24 * 7
     )
+
 
     return {
         "msg": "Login successful",
@@ -62,7 +61,6 @@ async def login(user: UserLogin, response: Response, db: Session = Depends(get_d
 
 @router.get("/user")
 async def read_user(current_user: dict = Depends(get_current_user)):
-    # Assume get_current_user returns a dict with user details.
     return current_user
 
 @router.post("/logout")

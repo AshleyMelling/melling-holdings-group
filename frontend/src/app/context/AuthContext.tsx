@@ -23,9 +23,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const isProtectedRoute = (path: string) => path.startsWith("/dashboard");
 
+  // Clears cookies during logout
+  const clearCookies = () => {
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  };
+
   const logout = async () => {
     try {
       await fetch("/api/logout", { method: "POST" });
+      clearCookies(); // Clear the token cookie
     } catch (err) {
       console.error("Logout failed:", err);
     }
@@ -34,6 +40,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const validateToken = async () => {
+    // Only validate token for protected routes
+    if (!isProtectedRoute(pathname)) return;
+
     try {
       const res = await fetch("/api/user", {
         method: "GET",
@@ -57,12 +66,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    // Validate token if the user navigates to a protected route
     validateToken();
   }, [pathname]);
 
   useEffect(() => {
-    const interval = setInterval(validateToken, 60_000);
-    return () => clearInterval(interval);
+    const interval = setInterval(validateToken, 60_000); // Check token every minute
+    return () => clearInterval(interval); // Clean up the interval on component unmount
   }, []);
 
   return (
