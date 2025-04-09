@@ -60,15 +60,21 @@ import {
 } from "@tabler/icons-react";
 import { ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 
+// Update the type to reflect all CSV columns
 export type KrakenLedger = {
   id: string;
+  txid: string;
   refid: string;
+  time: number; // timestamp as number (e.g. Unix time)
   type: string;
+  subtype: string;
+  aclass: string;
   asset: string;
+  wallet: string;
   amount: string;
   fee: string;
   balance: string;
-  time: number;
+  raw_data?: any;
 };
 
 const getCookie = (name: string): string | null => {
@@ -141,22 +147,18 @@ export default function KrakenLedgerHistoryTable() {
 
   const handleSyncAndRefresh = async () => {
     try {
-      // Optionally, set a separate state for syncing if you want to disable the button or show a spinner.
       setIsLoading(true);
-      // First, sync Kraken history (trades and ledgers)
       const syncResponse = await fetch("/api/kraken/history/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // if cookies or auth needed
+        credentials: "include",
       });
       if (!syncResponse.ok) {
         throw new Error("Sync failed: " + syncResponse.statusText);
       }
       const syncResult = await syncResponse.json();
       console.log("Sync result:", syncResult);
-
-      // Now fetch the updated ledger history from your DB
-      await fetchLedgers(); // This function should update your `data` state
+      await fetchLedgers();
     } catch (error) {
       console.error("Sync error:", error);
     } finally {
@@ -164,12 +166,26 @@ export default function KrakenLedgerHistoryTable() {
     }
   };
 
-
   useEffect(() => {
     fetchLedgers();
   }, []);
 
+  // Define columns to show most of the CSV fields
   const columns: ColumnDef<KrakenLedger>[] = [
+    {
+      accessorKey: "refid",
+      header: "RefID",
+      cell: ({ row }) => (
+        <div className="px-2 font-mono">{row.original.refid}</div>
+      ),
+    },
+    {
+      accessorKey: "txid",
+      header: "TxID",
+      cell: ({ row }) => (
+        <div className="px-2 font-mono">{row.original.txid}</div>
+      ),
+    },
     {
       accessorKey: "type",
       header: ({ column }) => (
@@ -190,10 +206,31 @@ export default function KrakenLedgerHistoryTable() {
       ),
     },
     {
+      accessorKey: "subtype",
+      header: "Subtype",
+      cell: ({ row }) => (
+        <div className="px-2">{row.original.subtype || "-"}</div>
+      ),
+    },
+    {
+      accessorKey: "aclass",
+      header: "Asset Class",
+      cell: ({ row }) => (
+        <div className="px-2">{row.original.aclass || "-"}</div>
+      ),
+    },
+    {
       accessorKey: "asset",
       header: "Asset",
       cell: ({ row }) => (
-        <div className="font-mono px-2">{row.original.asset}</div>
+        <div className="px-2 font-mono">{row.original.asset}</div>
+      ),
+    },
+    {
+      accessorKey: "wallet",
+      header: "Wallet",
+      cell: ({ row }) => (
+        <div className="px-2">{row.original.wallet || "-"}</div>
       ),
     },
     {
@@ -226,11 +263,24 @@ export default function KrakenLedgerHistoryTable() {
     {
       accessorKey: "time",
       header: "Time",
-      cell: ({ row }) => (
-        <div className="text-right px-2 text-xs text-muted-foreground">
-          {new Date(row.original.time * 1000).toLocaleString()}
-        </div>
-      ),
+      cell: ({ row }) => {
+        // row.original.time is now a string in ISO format, e.g. "2025-04-09 10:01:03.647498"
+        const timeValue = row.original.time;
+        const dateObj = new Date(timeValue);
+        // Check if the date is valid:
+        if (isNaN(dateObj.getTime())) {
+          return (
+            <div className="text-right px-2 text-xs text-muted-foreground">
+              Invalid Date
+            </div>
+          );
+        }
+        return (
+          <div className="text-right px-2 text-xs text-muted-foreground">
+            {dateObj.toLocaleString()}
+          </div>
+        );
+      },
     },
   ];
 
@@ -277,7 +327,7 @@ export default function KrakenLedgerHistoryTable() {
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Ledger History</h2>
         <Button
-          onClick={handleSyncAndRefresh} // <-- Use the new function here
+          onClick={handleSyncAndRefresh}
           disabled={isLoading}
           variant="outline"
           size="sm"
@@ -358,7 +408,7 @@ export default function KrakenLedgerHistoryTable() {
             >
               <SelectTrigger size="sm" className="w-20" id="rows-per-page">
                 <SelectValue
-                  placeholder={table.getState().pagination.pageSize}
+                  placeholder={`${table.getState().pagination.pageSize}`}
                 />
               </SelectTrigger>
               <SelectContent side="top">
@@ -417,7 +467,3 @@ export default function KrakenLedgerHistoryTable() {
     </div>
   );
 }
-
-// This component is a table that displays the Kraken ledger history.
-// It allows users to drag and drop rows to reorder them.
-// The table supports sorting, filtering, and pagination.
