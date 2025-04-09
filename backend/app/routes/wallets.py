@@ -19,21 +19,6 @@ from app.dependencies import get_db
 
 router = APIRouter()
 
-from fastapi import Depends
-
-
-import json
-import requests
-from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
-from app.models import WalletLookupRequest
-from app.db_models import ColdStorageWallet
-from app.dependencies import get_db
-import time
-
-router = APIRouter()
-
 @router.post("/lookup-wallet")
 def fetch_wallet_data(req: WalletLookupRequest, db: Session = Depends(get_db)):
     base_url = f"https://mempool.space/api/address/{req.address}"
@@ -151,3 +136,40 @@ def update_wallet(wallet_id: int, payload: ColdStorageWalletCreate, db: Session 
     db.refresh(wallet)
 
     return wallet
+
+@router.post("/wallets/sync")
+def sync_all_wallets(db: Session = Depends(get_db)):
+    """
+    Re-fetch all known wallet addresses from the DB and update their balance/data.
+    """
+    wallets = db.query(ColdStorageWallet).all()
+    updated = 0
+
+    for wallet in wallets:
+        print(f"🔄 Syncing: {wallet.name} - {wallet.address}")
+        try:
+            url = f"https://mempool.space/api/address/{wallet.address}"
+            res_address = requests.get(url, timeout=10)
+
+            if res_address.status_code != 200:
+                print(f"❌ Failed to fetch: {wallet.address}")
+                continue
+
+            data = res_address.json()
+            funded = data["chain_stats"].get("funded_txo_sum", 0)
+            spent = data["chain_stats"].get("spent_txo_sum", 0)
+            balance_btc = round((funded - spent) / 1e8, 8)
+            now = datetime.utcnow().isoformat()
+
+            wallet.balance = str(balance_btc)
+            wallet.lastChecked = now
+            wallet.data = json.dumps(data)
+
+            updated += 1
+        except Exception as e:
+            print(f"⚠️ Error syncing {wallet.address}: {e}")
+            continue
+
+    db.commit()
+    return {"msg": f"Synced {updated} wallet(s)"}
+

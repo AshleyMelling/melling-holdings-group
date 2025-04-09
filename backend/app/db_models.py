@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Float
+from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime
 from app.database import Base
 
@@ -31,24 +32,37 @@ class KrakenWallet(Base):
 
 class KrakenTrade(Base):
     __tablename__ = "kraken_trades"
-
-    id = Column(String, primary_key=True)
-    asset_pair = Column(String)
-    order_txid = Column(String)
-    cost = Column(String)
-    fee = Column(String)
-    vol = Column(String)
-    time = Column(Float, index=True)  # Used for incremental sync
+    
+    # Unique identifier as given by Kraken (e.g., "THVRQM-33VKH-UCI7BS")
+    id = Column(String, primary_key=True)           
+    
+    # Trade details from Kraken
+    order_txid = Column(String)          # Corresponds to "ordertxid"
+    post_txid = Column(String)           # Corresponds to "postxid"
+    asset_pair = Column(String)          # Corresponds to "pair"
+    time = Column(Float, index=True)     # Unix timestamp as float
+    trade_type = Column(String)          # Corresponds to "type"
+    order_type = Column(String)          # Corresponds to "ordertype"
+    price = Column(String)               # Corresponds to "price"
+    cost = Column(String)                # Corresponds to "cost"
+    fee = Column(String)                 # Corresponds to "fee"
+    vol = Column(String)                 # Corresponds to "vol"
+    margin = Column(String)              # Corresponds to "margin"
+    misc = Column(String)                # Corresponds to "misc"
+    trade_id = Column(Integer)           # Corresponds to "trade_id"
+    maker = Column(Boolean)              # Corresponds to "maker"
+    
+    # Optionally store the entire raw JSON response from Kraken
+    raw_data = Column(JSONB)
 
 class KrakenLedger(Base):
     __tablename__ = "kraken_ledgers"
-    
-    # New surrogate key for uniqueness
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    # refid is now just a regular field (indexed) so duplicates are allowed
     refid = Column(String, index=True)
     type = Column(String)
     asset = Column(String)
     amount = Column(String)
     fee = Column(String)
-    time = Column(Float, index=True)  # Unix timestamp
+    time = Column(Float, index=True)
+    raw_data = Column(JSONB) 

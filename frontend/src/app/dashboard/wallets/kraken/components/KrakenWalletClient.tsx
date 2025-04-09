@@ -9,7 +9,7 @@ const KrakenDataTable = dynamic(() => import("./KrakenDataTable"), {
   loading: () => <p>Loading Kraken Data Table...</p>,
 });
 
-const KrakenHistoryTable = dynamic(() => import("./KrakenHistoryTable"), {
+const KrakenHistoryTable = dynamic(() => import("./KrakenTradeHistoryTable"), {
   ssr: false,
   loading: () => <p>Loading Trade History...</p>,
 });

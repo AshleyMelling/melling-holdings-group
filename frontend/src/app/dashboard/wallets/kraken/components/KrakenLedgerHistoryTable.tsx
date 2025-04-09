@@ -139,6 +139,31 @@ export default function KrakenLedgerHistoryTable() {
     }
   };
 
+  const handleSyncAndRefresh = async () => {
+    try {
+      // Optionally, set a separate state for syncing if you want to disable the button or show a spinner.
+      setIsLoading(true);
+      // First, sync Kraken history (trades and ledgers)
+      const syncResponse = await fetch("/api/kraken/history/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include", // if cookies or auth needed
+      });
+      if (!syncResponse.ok) {
+        throw new Error("Sync failed: " + syncResponse.statusText);
+      }
+      const syncResult = await syncResponse.json();
+      console.log("Sync result:", syncResult);
+
+      // Now fetch the updated ledger history from your DB
+      await fetchLedgers(); // This function should update your `data` state
+    } catch (error) {
+      console.error("Sync error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   useEffect(() => {
     fetchLedgers();
@@ -252,7 +277,7 @@ export default function KrakenLedgerHistoryTable() {
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">Ledger History</h2>
         <Button
-          onClick={fetchLedgers}
+          onClick={handleSyncAndRefresh} // <-- Use the new function here
           disabled={isLoading}
           variant="outline"
           size="sm"

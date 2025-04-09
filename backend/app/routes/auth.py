@@ -35,6 +35,15 @@ async def signup(user: UserSignup, db: Session = Depends(get_db)):
 @router.post("/login")
 async def login(user: UserLogin, response: Response, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
+
+    if not db_user:
+        print("❌ User not found:", user.email)
+    else:
+        print("✅ User found:", db_user.email)
+        print("🔐 Stored hash:", db_user.hashed_password)
+        print("🔐 Input password:", user.password)
+        print("🔍 Password match?", verify_password(user.password, db_user.hashed_password))
+
     if not db_user or not verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect email or password")
 

@@ -1,3 +1,5 @@
+# This is the Alembic environment file.
+# It is used to run migrations in both offline and online modes.
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
