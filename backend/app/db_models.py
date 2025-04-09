@@ -64,7 +64,7 @@ class KrakenLedger(Base):
     asset = Column(String)
     amount = Column(String)
     fee = Column(String)
-    time = Column(Float, index=True)
+    time = Column(DateTime) 
     txid = Column(String)
     subtype = Column(String)
     aclass = Column(String)

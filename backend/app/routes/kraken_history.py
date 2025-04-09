@@ -65,39 +65,3 @@ def sync_kraken_trade_history(db: Session = Depends(get_db)):
     except Exception as e:
         print("❌ Error in Kraken sync:", str(e))
         raise HTTPException(status_code=500, detail="Trade sync failed")
-
-@router.post("/kraken/history/upload-ledgers")
-async def upload_kraken_ledger_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not file.filename.endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Only CSV files are supported")
-
-    try:
-        # Read file contents as a Pandas DataFrame
-        contents = await file.read()
-        df = pd.read_csv(pd.compat.StringIO(contents.decode()))
-
-        count = 0
-        for _, row in df.iterrows():
-            ledger = KrakenLedger(
-                refid=row.get("refid"),
-                txid=row.get("txid"),
-                time=float(row.get("time")) if pd.notnull(row.get("time")) else None,
-                type=row.get("type"),
-                subtype=row.get("subtype"),
-                aclass=row.get("aclass"),
-                asset=row.get("asset"),
-                wallet=row.get("wallet"),
-                amount=str(row.get("amount")),
-                fee=str(row.get("fee")),
-                balance=str(row.get("balance")),
-                raw_data=row.to_dict(),
-            )
-            db.add(ledger)
-            count += 1
-
-        db.commit()
-        return {"detail": f"✅ Uploaded and inserted {count} ledger rows successfully."}
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"❌ Upload failed: {str(e)}")
