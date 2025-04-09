@@ -1,5 +1,5 @@
 # /home/remem/bitcoinholdings/backend/app/routes/kraken_history.py
-from fastapi import UploadFile, File, APIRouter, Depends, HTTPException
+from fastapi import UploadFile, File, APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.database import get_session as get_db
 from app.db_models import KrakenTrade
@@ -19,9 +19,27 @@ def get_trades(db: Session = Depends(get_db)):
     return [trade.__dict__ for trade in trades]
 
 @router.get("/kraken/history/ledgers")
-def get_ledgers(db: Session = Depends(get_db)):
-    ledgers = db.query(KrakenLedger).order_by(KrakenLedger.time.desc()).all()
-    return [ledger.__dict__ for ledger in ledgers]
+def get_ledgers(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    total = db.query(KrakenLedger).count()
+    offset = (page - 1) * page_size
+    ledgers = (
+        db.query(KrakenLedger)
+        .order_by(KrakenLedger.time.desc())
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+
+    return {
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "items": [ledger.__dict__ for ledger in ledgers]
+    }
 
 @router.post("/kraken/history/sync")
 def sync_kraken_trade_history(db: Session = Depends(get_db)):

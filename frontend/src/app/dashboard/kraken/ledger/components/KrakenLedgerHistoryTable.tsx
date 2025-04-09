@@ -21,11 +21,11 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   ColumnDef,
+  useReactTable,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
-  useReactTable,
   getFacetedRowModel,
   getFacetedUniqueValues,
   ColumnFiltersState,
@@ -43,7 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -52,29 +52,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import {
   IconChevronsLeft,
   IconChevronLeft,
   IconChevronRight,
   IconChevronsRight,
 } from "@tabler/icons-react";
-import { ChevronUp, ChevronDown } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { ChevronUp, ChevronDown, Loader2 } from "lucide-react";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 
-// Define the type for Kraken Trade data
-export type KrakenTrade = {
+// Update the type to reflect all CSV columns
+export type KrakenLedger = {
   id: string;
-  asset_pair: string;
-  order_txid: string;
-  cost: string;
+  refid: string;
+  txid: string;
+  type: string;
+  subtype: string;
+  aclass: string;
+  asset: string;
+  wallet: string;
+  amount: string;
   fee: string;
-  vol: string;
+  balance: string;
   time: number;
 };
 
-// Draggable row for table display
-function DraggableRow({ row }: { row: Row<KrakenTrade> }) {
+
+const getCookie = (name: string): string | null => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
+};
+
+function DraggableLedgerRow({ row }: { row: Row<KrakenLedger> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
   });
@@ -97,8 +108,8 @@ function DraggableRow({ row }: { row: Row<KrakenTrade> }) {
   );
 }
 
-export default function KrakenTradeHistoryTable() {
-  const [data, setData] = useState<KrakenTrade[]>([]);
+export default function KrakenLedgerHistoryTable() {
+  const [data, setData] = useState<KrakenLedger[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -107,6 +118,8 @@ export default function KrakenTradeHistoryTable() {
     { id: "time", desc: true },
   ]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
+  const [total, setTotal] = useState(0);
+
 
   const sensors = useSensors(
     useSensor(MouseSensor),
@@ -114,34 +127,44 @@ export default function KrakenTradeHistoryTable() {
     useSensor(KeyboardSensor)
   );
 
-  // Function to fetch Kraken Trade History from your backend API
-  const fetchTrades = async () => {
+  const fetchLedgers = async (page = 1, pageSize = 10) => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/kraken/history/trades", {
-        cache: "no-store",
-        credentials: "include", // Sends the cookie automatically
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const res = await fetch(
+        `/api/kraken/history/ledgers?page=${page}&page_size=${pageSize}`,
+        {
+          cache: "no-store",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
       const result = await res.json();
-      console.log("Fetched Kraken trades:", result);
-      // Assuming result is an array of trade objects
-      setData(result);
+      console.log("Fetched paginated ledgers:", result);
+
+      setData(result.items || []);
+      setTotal(result.total || 0);
+      setPagination((prev) => ({
+        ...prev,
+        pageIndex: result.page - 1,
+        pageSize: result.page_size,
+      }));
     } catch (err) {
-      console.error("❌ Failed to fetch Kraken trades", err);
+      console.error("❌ Failed to fetch paginated ledgers", err);
       setData([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // New sync function to first trigger the backend sync endpoint then refresh trades
+
+
+
   const handleSyncAndRefresh = async () => {
     try {
       setIsLoading(true);
-      // Trigger sync endpoint
       const syncResponse = await fetch("/api/kraken/history/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -152,8 +175,7 @@ export default function KrakenTradeHistoryTable() {
       }
       const syncResult = await syncResponse.json();
       console.log("Sync result:", syncResult);
-      // Now fetch the updated trade history from the backend API
-      await fetchTrades();
+      await fetchLedgers();
     } catch (error) {
       console.error("Sync error:", error);
     } finally {
@@ -162,19 +184,34 @@ export default function KrakenTradeHistoryTable() {
   };
 
   useEffect(() => {
-    fetchTrades();
+    fetchLedgers(); // just fetch once on mount
   }, []);
 
-  // Define table columns for KrakenTrade
-  const columns: ColumnDef<KrakenTrade>[] = [
+
+  // Define columns to show most of the CSV fields
+  const columns: ColumnDef<KrakenLedger>[] = [
     {
-      accessorKey: "asset_pair",
+      accessorKey: "refid",
+      header: "RefID",
+      cell: ({ row }) => (
+        <div className="px-2 font-mono">{row.original.refid}</div>
+      ),
+    },
+    {
+      accessorKey: "txid",
+      header: "TxID",
+      cell: ({ row }) => (
+        <div className="px-2 font-mono">{row.original.txid}</div>
+      ),
+    },
+    {
+      accessorKey: "type",
       header: ({ column }) => (
         <div
-          className="text-left px-2 cursor-pointer select-none"
+          className="cursor-pointer select-none px-2"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Asset Pair
+          Type
           {column.getIsSorted() === "asc" ? (
             <ChevronUp className="inline w-4 h-4 ml-1" />
           ) : column.getIsSorted() === "desc" ? (
@@ -183,26 +220,43 @@ export default function KrakenTradeHistoryTable() {
         </div>
       ),
       cell: ({ row }) => (
-        <div className="text-left px-2 font-mono">
-          {row.original.asset_pair}
-        </div>
+        <div className="capitalize px-2">{row.original.type}</div>
       ),
     },
     {
-      accessorKey: "order_txid",
-      header: "Order TxID",
+      accessorKey: "subtype",
+      header: "Subtype",
       cell: ({ row }) => (
-        <div className="text-left px-2 font-mono text-xs">
-          {row.original.order_txid}
-        </div>
+        <div className="px-2">{row.original.subtype || "-"}</div>
       ),
     },
     {
-      accessorKey: "cost",
-      header: "Cost",
+      accessorKey: "aclass",
+      header: "Asset Class",
+      cell: ({ row }) => (
+        <div className="px-2">{row.original.aclass || "-"}</div>
+      ),
+    },
+    {
+      accessorKey: "asset",
+      header: "Asset",
+      cell: ({ row }) => (
+        <div className="px-2 font-mono">{row.original.asset}</div>
+      ),
+    },
+    {
+      accessorKey: "wallet",
+      header: "Wallet",
+      cell: ({ row }) => (
+        <div className="px-2">{row.original.wallet || "-"}</div>
+      ),
+    },
+    {
+      accessorKey: "amount",
+      header: "Amount",
       cell: ({ row }) => (
         <div className="text-right px-2">
-          {parseFloat(row.original.cost).toFixed(2)}
+          {parseFloat(row.original.amount).toFixed(8)}
         </div>
       ),
     },
@@ -211,33 +265,48 @@ export default function KrakenTradeHistoryTable() {
       header: "Fee",
       cell: ({ row }) => (
         <div className="text-right px-2">
-          {parseFloat(row.original.fee).toFixed(2)}
+          {parseFloat(row.original.fee).toFixed(8)}
         </div>
       ),
     },
     {
-      accessorKey: "vol",
-      header: "Volume",
+      accessorKey: "balance",
+      header: "Balance",
       cell: ({ row }) => (
         <div className="text-right px-2">
-          {parseFloat(row.original.vol).toFixed(4)}
+          {parseFloat(row.original.balance).toFixed(8)}
         </div>
       ),
     },
     {
       accessorKey: "time",
       header: "Time",
-      cell: ({ row }) => (
-        <div className="text-right px-2 text-xs text-muted-foreground">
-          {new Date(row.original.time * 1000).toLocaleString()}
-        </div>
-      ),
+      cell: ({ row }) => {
+        // row.original.time is now a string in ISO format, e.g. "2025-04-09 10:01:03.647498"
+        const timeValue = row.original.time;
+        const dateObj = new Date(timeValue);
+        // Check if the date is valid:
+        if (isNaN(dateObj.getTime())) {
+          return (
+            <div className="text-right px-2 text-xs text-muted-foreground">
+              Invalid Date
+            </div>
+          );
+        }
+        return (
+          <div className="text-right px-2 text-xs text-muted-foreground">
+            {dateObj.toLocaleString()}
+          </div>
+        );
+      },
     },
   ];
 
   const table = useReactTable({
     data,
     columns,
+    manualPagination: true, // 🔥 enable server-side pagination
+    pageCount: Math.ceil(total / pagination.pageSize), // 👈 use the total count from API
     state: {
       sorting,
       columnVisibility,
@@ -251,15 +320,26 @@ export default function KrakenTradeHistoryTable() {
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
-    onPaginationChange: setPagination,
+
+    // 🧠 this will trigger fetchLedgers() on table pagination controls
+    onPaginationChange: (updater) => {
+      const next =
+        typeof updater === "function" ? updater(pagination) : updater;
+      const page = next.pageIndex + 1;
+      const size = next.pageSize;
+      setPagination(next);
+      fetchLedgers(page, size); // 🔁 manually fetch paginated data
+    },
+
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
-    autoResetPageIndex: true,
+    autoResetPageIndex: false, // ✅ prevent table from jumping back to page 1 on update
   });
+
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -273,9 +353,10 @@ export default function KrakenTradeHistoryTable() {
   const dataIds: UniqueIdentifier[] = data.map((item) => item.id);
 
   return (
-    <Tabs defaultValue="trades" className="w-full flex-col gap-6">
+    <Tabs defaultValue="ledgers" className="w-full flex-col gap-6">
       {/* Top Toolbar with Sync and Refresh Buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 lg:px-6">
+        <h2 className="text-lg font-semibold">Ledger History</h2>
         <Button
           variant="outline"
           size="sm"
@@ -285,25 +366,26 @@ export default function KrakenTradeHistoryTable() {
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Syncing & Refreshing Trade History...
+              Syncing & Refreshing Ledger History...
             </>
           ) : (
-            "Sync Trade History"
+            "Sync Ledger History"
           )}
         </Button>
       </div>
 
       <TabsContent
-        value="trades"
+        value="ledgers"
         className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
       >
+        {/* Table Section */}
         <div className="overflow-hidden rounded-lg border">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <Table>
+            <Table className="table-fixed w-full">
               <TableHeader className="bg-muted sticky top-0 z-10">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
@@ -327,7 +409,7 @@ export default function KrakenTradeHistoryTable() {
                     strategy={verticalListSortingStrategy}
                   >
                     {table.getRowModel().rows.map((row) => (
-                      <DraggableRow key={row.id} row={row} />
+                      <DraggableLedgerRow key={row.id} row={row} />
                     ))}
                   </SortableContext>
                 ) : (
@@ -336,7 +418,7 @@ export default function KrakenTradeHistoryTable() {
                       colSpan={columns.length}
                       className="h-24 text-center"
                     >
-                      No trade history.
+                      No ledger history found.
                     </TableCell>
                   </TableRow>
                 )}
@@ -362,7 +444,7 @@ export default function KrakenTradeHistoryTable() {
               >
                 <SelectTrigger size="sm" className="w-20" id="rows-per-page">
                   <SelectValue
-                    placeholder={table.getState().pagination.pageSize}
+                    placeholder={`${table.getState().pagination.pageSize}`}
                   />
                 </SelectTrigger>
                 <SelectContent side="top">
@@ -375,8 +457,8 @@ export default function KrakenTradeHistoryTable() {
               </Select>
             </div>
             <div className="flex w-fit items-center justify-center text-sm font-medium">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount()}
+              Page {pagination.pageIndex + 1} of{" "}
+              {Math.ceil(total / pagination.pageSize)}
             </div>
             <div className="ml-auto flex items-center gap-2 lg:ml-0">
               <Button

@@ -41,12 +41,18 @@ const data = {
       icon: IconUsers,
     },
     {
-      title: "Wallet Tracker",
-      url: "/dashboard/wallets",
+      title: "Cold Storage",
+      url: "/dashboard/cold-storage",
+      icon: IconDatabase,
+    },
+    {
+      title: "Kraken",
+      url: "/dashboard/kraken",
       icon: IconDatabase,
       items: [
-        { title: "Cold Storage", url: "/dashboard/wallets/cold-storage" },
-        { title: "Kraken", url: "/dashboard/wallets/kraken" },
+        { title: "Accounts", url: "/dashboard/kraken/accounts" },
+        { title: "Trades", url: "/dashboard/kraken/trades" },
+        { title: "Ledger", url: "/dashboard/kraken/ledger" },
         // Add additional submenus as needed
       ],
     },
