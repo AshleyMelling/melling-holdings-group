@@ -10,6 +10,7 @@ from app.routes import kraken_history
 from app.database import engine
 from app.db_models import Base
 from app.routes.kraken_sync import router as kraken_sync_router
+from app.routes.ledger_upload import router as ledger_upload_router
 
 # ✅ ENV loader
 from dotenv import load_dotenv
@@ -45,6 +46,7 @@ app.include_router(wallets.router, prefix="/api")           # /api/wallets
 app.include_router(kraken_router, prefix="/api")            # /api/kraken/balance
 app.include_router(kraken_history.router, prefix="/api")    # /api/kraken/history/...
 app.include_router(kraken_sync_router, prefix="/api")      # /api/kraken/sync
+app.include_router(ledger_upload_router, prefix="/api")
 
 
 # ✅ (Optional) Scheduler for Kraken sync

@@ -57,7 +57,7 @@ class KrakenTrade(Base):
 
 class KrakenLedger(Base):
     __tablename__ = "kraken_ledgers"
-
+    
     id = Column(Integer, primary_key=True, autoincrement=True)
     refid = Column(String, index=True)
     type = Column(String)
@@ -65,4 +65,9 @@ class KrakenLedger(Base):
     amount = Column(String)
     fee = Column(String)
     time = Column(Float, index=True)
-    raw_data = Column(JSONB) 
+    txid = Column(String)
+    subtype = Column(String)
+    aclass = Column(String)
+    wallet = Column(String)
+    balance = Column(String)
+    raw_data = Column(JSONB)
