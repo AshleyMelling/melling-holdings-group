@@ -62,7 +62,6 @@ The Melling Holdings Group Dashboard is the operational command center for manag
 
 ## Setup & Development
 
-```bash
 # Clone the repo
 git clone https://github.com/mellingholdingsgroup/dashboard.git
 
@@ -76,6 +75,7 @@ cd frontend
 npm install
 npm run dev
 Roadmap
+
  Wallet tracking with UTXO details
 
  Kraken integration with full history sync
