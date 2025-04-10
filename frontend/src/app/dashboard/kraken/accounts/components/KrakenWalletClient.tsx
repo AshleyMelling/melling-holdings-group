@@ -7,7 +7,7 @@ import React, { Suspense } from "react";
 const KrakenDataTable = dynamic(
   () =>
     import(
-      "/home/remem/bitcoinholdings/frontend/src/app/dashboard/kraken/accounts/components/KrakenDataTable"
+      "@/app/dashboard/kraken/accounts/components/KrakenDataTable"
     ),
   {
     ssr: false,

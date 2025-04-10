@@ -1,15 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
-// Lazy-load both components
-const WalletDataTable = dynamic(() => import("./WalletDataTable"), {
-  ssr: false,
-});
-
-const AccountDataTable = dynamic(() => import("./AccountDataTable"), {
-  ssr: false,
-});
+import WalletDataTable from "./WalletDataTable";
+import AccountDataTable from "./AccountDataTable";
 
 export function ColdWalletClient() {
   return (

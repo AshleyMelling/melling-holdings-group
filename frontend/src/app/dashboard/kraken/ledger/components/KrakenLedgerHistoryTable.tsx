@@ -165,7 +165,7 @@ export default function KrakenLedgerHistoryTable() {
   const handleSyncAndRefresh = async () => {
     try {
       setIsLoading(true);
-      const syncResponse = await fetch("/api/kraken/history/sync", {
+      const syncResponse = await fetch("/api/kraken/history/sync-ledgers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

@@ -32,6 +32,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { IconArrowsExchange } from "@tabler/icons-react";
 
 const data = {
   navMain: [
@@ -48,7 +49,7 @@ const data = {
     {
       title: "Kraken",
       url: "/dashboard/kraken",
-      icon: IconDatabase,
+      icon: IconArrowsExchange,
       items: [
         { title: "Accounts", url: "/dashboard/kraken/accounts" },
         { title: "Trades", url: "/dashboard/kraken/trades" },

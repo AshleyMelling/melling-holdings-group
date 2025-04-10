@@ -7,7 +7,7 @@ import React, { Suspense } from "react";
 const KrakenLedgerHistoryTable = dynamic(
   () =>
     import(
-      "/home/remem/bitcoinholdings/frontend/src/app/dashboard/kraken/ledger/components/KrakenLedgerHistoryTable"
+      "@/app/dashboard/kraken/ledger/components/KrakenLedgerHistoryTable"
     ),
   {
     ssr: false,

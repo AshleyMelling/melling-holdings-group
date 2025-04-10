@@ -121,38 +121,72 @@ const KrakenDataTable = () => {
 
   // Fetch Kraken data from your backend API and transform it into an array
   const fetchKrakenData = async () => {
-    setIsLoading(true); // Start loading
+    setIsLoading(true);
     try {
       const res = await fetch("/api/kraken/balance", {
         cache: "no-store",
-        credentials: "include", // This sends the HttpOnly cookie
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
       });
       const result = await res.json();
       console.log("Fetched Kraken data:", result);
-      const wallets: KrakenWallet[] = Object.entries(result).map(
-        ([asset, balance]) => ({
+
+      const wallets: KrakenWallet[] = Object.entries(result)
+        .map(([asset, balance]) => ({
           id: asset,
           asset,
           balance: parseFloat(balance as string),
-        })
-      );
+        }))
+        .filter((wallet) => wallet.balance !== 0); // 👈 HERE
+
       setData(wallets);
     } catch (err) {
       console.error("❌ Failed to fetch Kraken data", err);
       setData([]);
     } finally {
-      setIsLoading(false); // End loading
+      setIsLoading(false);
     }
   };
-
-
   // Fetch data on mount
   useEffect(() => {
     fetchKrakenData();
   }, []);
+
+  const knownCryptoIconsOrgAssets = [
+    "btc",
+    "eth",
+    "usd",
+    "gbp",
+    "eur",
+    "doge",
+    "ada",
+    "trx",
+    "dot",
+    "sol",
+    "link",
+  ];
+
+  const assetMetaMap: Record<string, { label: string; icon?: string }> = {
+    XXBT: { label: "BTC", icon: "btc" },
+    XETH: { label: "ETH", icon: "eth" },
+    ZUSD: { label: "USD", icon: "usd" },
+    ZGBP: { label: "GBP", icon: "gbp" },
+    ZEUR: { label: "EUR", icon: "eur" },
+    XDG: { label: "DOGE", icon: "doge" },
+    XXDG: { label: "DOGE", icon: "doge" },
+    "ADA.F": { label: "ADA", icon: "ada" },
+    "TRX.F": { label: "TRX", icon: "trx" },
+    "DOT.F": { label: "DOT", icon: "dot" },
+    "TIA.F": { label: "TIA", icon: "tia" },
+    "SOL.F": { label: "SOL", icon: "sol" },
+    POL: { label: "POL", icon: "pol" },
+    LINK: { label: "LINK", icon: "link" },
+    WIF: { label: "WIF", icon: "wif" }, // adjust if needed
+    SUI: { label: "SUI", icon: "sui" }, // confirm support
+    WIN: { label: "WIN", icon: "win" }, // might not be supported
+  };
 
   const columns: ColumnDef<KrakenWallet>[] = [
     {
@@ -170,10 +204,32 @@ const KrakenDataTable = () => {
           ) : null}
         </div>
       ),
-      cell: ({ row }) => (
-        <div className="text-left px-2 font-mono">{row.original.asset}</div>
-      ),
+      cell: ({ row }) => {
+        const raw = row.original.asset;
+        const meta = assetMetaMap[raw] || {
+          label: raw,
+          icon: raw.toLowerCase(),
+        };
+
+        const fallbackUrl = `https://cryptoicon-api.pages.dev/api/icon/${meta.icon}`;
+        const defaultIconUrl = "/default-coin.png";
+
+        const [imgSrc, setImgSrc] = useState(fallbackUrl);
+
+        return (
+          <div className="flex items-center gap-2 px-2 font-mono">
+            <img
+              src={imgSrc}
+              alt={meta.label}
+              className="w-4 h-4 rounded-full"
+              onError={() => setImgSrc(defaultIconUrl)}
+            />
+            <span>{meta.label}</span>
+          </div>
+        );
+      },
     },
+
     {
       accessorKey: "balance",
       header: ({ column }) => (

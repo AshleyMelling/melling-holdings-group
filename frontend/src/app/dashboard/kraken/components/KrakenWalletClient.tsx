@@ -15,7 +15,7 @@ const KrakenHistoryTable = dynamic(() => import("../trades/components/KrakenTrad
 });
 
 const KrakenLedgerHistoryTable = dynamic(
-  () => import("../ledger/KrakenLedgerHistoryTable"),
+  () => import("../ledger/components/KrakenLedgerHistoryTable"),
   {
     ssr: false,
     loading: () => <p>Loading Ledger History...</p>,
