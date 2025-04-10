@@ -180,7 +180,6 @@ const KrakenDataTable = () => {
       setPriceData({});
     }
   };
-;
 
   // Optional: Create a single refresh function to load both balances and prices
   const refreshData = () => {
@@ -359,18 +358,37 @@ const KrakenDataTable = () => {
       },
     },
     {
-      id: "totalUSD",
-      header: () => <div className="text-right px-2">Total (USD)</div>,
-      cell: ({ row }) => {
-        const price = getPriceForAsset(row.original.asset, "usd");
-        const total = price ? price * row.original.balance : null;
-        return (
-          <div className="text-right px-2">
-            {total ? `$${total.toFixed(2)}` : "-"}
-          </div>
-        );
-      },
-    },
+  id: "totalUSD",
+  // Use accessorFn to compute the sortable fiat value
+  accessorFn: (row: KrakenWallet) => {
+    const price = getPriceForAsset(row.asset, "usd");
+    return price ? price * row.balance : 0;
+  },
+  header: ({ column }) => (
+    <div
+      className="text-right px-2 cursor-pointer select-none"
+      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+    >
+      Total (USD)
+      {column.getIsSorted() === "asc"
+        ? " ▲"
+        : column.getIsSorted() === "desc"
+        ? " ▼"
+        : null}
+    </div>
+  ),
+  // Use getValue() to retrieve the computed fiat value for display
+  cell: ({ getValue }) => {
+    const total = getValue<number>();
+    return (
+      <div className="text-right px-2">
+        {total ? `$${total.toFixed(2)}` : "-"}
+      </div>
+    );
+  },
+},
+
+
     {
       id: "totalGBP",
       header: () => <div className="text-right px-2">Total (GBP)</div>,

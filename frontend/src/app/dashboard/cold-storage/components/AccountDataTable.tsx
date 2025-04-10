@@ -43,6 +43,9 @@ const AccountDataTable = () => {
   const [data, setData] = useState<AccountWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [btcPrice, setBtcPrice] = useState<{ usd: number; gbp: number } | null>(
+    null
+  );
 
   const fetchAndAggregate = async () => {
     setIsLoading(true);
@@ -112,62 +115,137 @@ const AccountDataTable = () => {
     }
   };
 
+  const fetchBtcPrice = async () => {
+    try {
+      const res = await fetch("/api/kraken/prices", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch BTC price");
+      const result = await res.json();
+
+      // Assume result returns an object with a BTC or XXBT key.
+      const btcKey = result["BTC"] ? "BTC" : result["XXBT"] ? "XXBT" : null;
+      if (btcKey) {
+        setBtcPrice(result[btcKey]);
+      }
+    } catch (err) {
+      console.error("❌ Failed to fetch BTC price", err);
+    }
+  };
+
   useEffect(() => {
     fetchAndAggregate();
   }, []);
 
-  const columns: ColumnDef<AccountWithDetails>[] = [
-    {
-      accessorKey: "account",
-      header: ({ column }) => (
-        <div
-          className="text-left px-2 cursor-pointer select-none"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Account
-          {column.getIsSorted() === "asc" ? (
-            <ChevronUp className="inline w-4 h-4 ml-1" />
-          ) : column.getIsSorted() === "desc" ? (
-            <ChevronDown className="inline w-4 h-4 ml-1" />
-          ) : null}
-        </div>
-      ),
-      cell: ({ row }) => <AccountDrawer account={row.original} />,
-    },
-    {
-      accessorKey: "walletCount",
-      header: ({ column }) => (
-        <div
-          className="text-left px-2 cursor-pointer select-none"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Wallet Count
-          {column.getIsSorted() === "asc" ? (
-            <ChevronUp className="inline w-4 h-4 ml-1" />
-          ) : column.getIsSorted() === "desc" ? (
-            <ChevronDown className="inline w-4 h-4 ml-1" />
-          ) : null}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "totalBTC",
-      header: ({ column }) => (
-        <div
-          className="text-left px-2 cursor-pointer select-none"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Total BTC
-          {column.getIsSorted() === "asc" ? (
-            <ChevronUp className="inline w-4 h-4 ml-1" />
-          ) : column.getIsSorted() === "desc" ? (
-            <ChevronDown className="inline w-4 h-4 ml-1" />
-          ) : null}
-        </div>
-      ),
-      cell: ({ getValue }) => Number(getValue()).toFixed(7),
-    },
-  ];
+  useEffect(() => {
+    fetchBtcPrice();
+  }, []);
+
+  const columns: ColumnDef<AccountWithDetails>[] = React.useMemo(
+    () => [
+      {
+        accessorKey: "account",
+        header: ({ column }) => (
+          <div
+            className="text-left px-2 cursor-pointer select-none"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Account
+            {column.getIsSorted() === "asc" ? (
+              <ChevronUp className="inline w-4 h-4 ml-1" />
+            ) : column.getIsSorted() === "desc" ? (
+              <ChevronDown className="inline w-4 h-4 ml-1" />
+            ) : null}
+          </div>
+        ),
+        cell: ({ row }) => <AccountDrawer account={row.original} />,
+      },
+      {
+        accessorKey: "walletCount",
+        header: ({ column }) => (
+          <div
+            className="text-left px-2 cursor-pointer select-none"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Wallet Count
+            {column.getIsSorted() === "asc" ? (
+              <ChevronUp className="inline w-4 h-4 ml-1" />
+            ) : column.getIsSorted() === "desc" ? (
+              <ChevronDown className="inline w-4 h-4 ml-1" />
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "totalBTC",
+        header: ({ column }) => (
+          <div
+            className="text-left px-2 cursor-pointer select-none"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Total BTC
+            {column.getIsSorted() === "asc" ? (
+              <ChevronUp className="inline w-4 h-4 ml-1" />
+            ) : column.getIsSorted() === "desc" ? (
+              <ChevronDown className="inline w-4 h-4 ml-1" />
+            ) : null}
+          </div>
+        ),
+        cell: ({ getValue }) => Number(getValue()).toFixed(7),
+      },
+      {
+        id: "priceUSD",
+        accessorFn: (row: AccountWithDetails) =>
+          btcPrice ? row.totalBTC * btcPrice.usd : 0,
+        header: ({ column }) => (
+          <div
+            className="text-left px-2 cursor-pointer select-none"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Price (USD)
+            {column.getIsSorted() === "asc" ? (
+              <ChevronUp className="inline w-4 h-4 ml-1" />
+            ) : column.getIsSorted() === "desc" ? (
+              <ChevronDown className="inline w-4 h-4 ml-1" />
+            ) : null}
+          </div>
+        ),
+        cell: ({ getValue }) => {
+          const value = getValue<number>();
+          return (
+            <div className="text-left px-2">
+              {btcPrice ? `$${value.toFixed(2)}` : "-"}
+            </div>
+          );
+        },
+      },
+      {
+        id: "priceGBP",
+        accessorFn: (row: AccountWithDetails) =>
+          btcPrice ? row.totalBTC * btcPrice.gbp : 0,
+        header: ({ column }) => (
+          <div
+            className="text-left px-2 cursor-pointer select-none"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Price (GBP)
+            {column.getIsSorted() === "asc" ? (
+              <ChevronUp className="inline w-4 h-4 ml-1" />
+            ) : column.getIsSorted() === "desc" ? (
+              <ChevronDown className="inline w-4 h-4 ml-1" />
+            ) : null}
+          </div>
+        ),
+        cell: ({ getValue }) => {
+          const value = getValue<number>();
+          return (
+            <div className="text-left px-2">
+              {btcPrice ? `£${value.toFixed(2)}` : "-"}
+            </div>
+          );
+        },
+      },
+    ],
+    [btcPrice]
+  );
 
   const table = useReactTable({
     data,

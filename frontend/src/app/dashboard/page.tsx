@@ -1,4 +1,3 @@
-// /home/remem/bitcoinholdings/frontend/src/app/dashboard/page.tsx
 import React from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -6,6 +5,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { DataTable } from "@/components/data-table";
 import { SectionCards } from "@/components/section-cards";
+import { TotalBtcCard } from "./components/TotalBTC"; // <-- Import your new card here
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
@@ -35,7 +35,8 @@ export default async function WalletsPage() {
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <SectionCards />
+              <TotalBtcCard />
+
               <div className="px-4 lg:px-6">
                 <ChartAreaInteractive />
               </div>

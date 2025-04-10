@@ -15,7 +15,14 @@ from app.models import (
 )
 from app.db_models import ColdStorageWallet
 from app.dependencies import get_db
+import krakenex
+import os
 
+def get_kraken_client():
+    k = krakenex.API()
+    k.key = os.getenv("KRAKEN_API_KEY")
+    k.secret = os.getenv("KRAKEN_API_SECRET")
+    return k
 
 router = APIRouter()
 
@@ -173,3 +180,34 @@ def sync_all_wallets(db: Session = Depends(get_db)):
     db.commit()
     return {"msg": f"Synced {updated} wallet(s)"}
 
+@router.get("/coldstorage/balance")
+def get_aggregated_coldstorage_balance(db: Session = Depends(get_db)):
+    """
+    Returns the total BTC balance from all ColdStorageWallet records
+    in the database as a single JSON object: { "BTC": "..." }.
+    """
+    wallets = db.query(ColdStorageWallet).all()
+
+    # Convert each wallet's balance to a float, then sum them
+    total_btc = sum(float(w.balance) for w in wallets if w.balance)
+
+    return {"BTC": f"{total_btc:.8f}"}
+
+@router.get("/balance/aggregate")
+def get_aggregate_balance(db: Session = Depends(get_db)):
+    # 1. Real-time from Kraken's API
+    k = get_kraken_client()
+    response = k.query_private("Balance")
+    if "error" in response and response["error"]:
+        raise HTTPException(status_code=400, detail=response["error"])
+    kraken_data = response["result"]
+
+    # Sum only the BTC-related entry (XXBT), or fallback to 0 if missing
+    kraken_btc = float(kraken_data.get("XXBT", "0"))
+
+    # 2. Cold storage from DB
+    cold_wallets = db.query(ColdStorageWallet).all()
+    cold_btc = sum(float(w.balance) for w in cold_wallets if w.balance)
+
+    total_btc = kraken_btc + cold_btc
+    return {"BTC": f"{total_btc:.8f}"}
