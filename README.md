@@ -1,4 +1,3 @@
-![Melling Holdings Group Dashboard](/mnt/data/A_screenshot_displays_a_GitHub_repository_page_for.png)
 ![MIT License](https://img.shields.io/github/license/AshleyMelling/melling-holdings-group)
 ![GitHub Repo Stars](https://img.shields.io/github/stars/AshleyMelling/melling-holdings-group)
 ![GitHub Last Commit](https://img.shields.io/github/last-commit/AshleyMelling/melling-holdings-group)
