@@ -70,6 +70,12 @@ export type KrakenWallet = {
   balance: number;
 };
 
+// Define the type for price data per asset
+type PriceData = {
+  usd: number;
+  gbp: number;
+};
+
 // Simple helper function to get a cookie by name
 const getCookie = (name: string): string | null => {
   const value = `; ${document.cookie}`;
@@ -104,6 +110,7 @@ function DraggableRow({ row }: { row: Row<KrakenWallet> }) {
 
 const KrakenDataTable = () => {
   const [data, setData] = useState<KrakenWallet[]>([]);
+  const [priceData, setPriceData] = useState<Record<string, PriceData>>({});
   const [rowSelection, setRowSelection] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -119,7 +126,7 @@ const KrakenDataTable = () => {
     useSensor(KeyboardSensor)
   );
 
-  // Fetch Kraken data from your backend API and transform it into an array
+  // Fetch Kraken wallet data (balances) from your backend API
   const fetchKrakenData = async () => {
     setIsLoading(true);
     try {
@@ -139,7 +146,7 @@ const KrakenDataTable = () => {
           asset,
           balance: parseFloat(balance as string),
         }))
-        .filter((wallet) => wallet.balance !== 0); // 👈 HERE
+        .filter((wallet) => wallet.balance !== 0);
 
       setData(wallets);
     } catch (err) {
@@ -149,24 +156,82 @@ const KrakenDataTable = () => {
       setIsLoading(false);
     }
   };
+
+
+  
+  const fetchKrakenPrices = async () => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+
+    try {
+      const res = await fetch(`${API_URL}/api/kraken/prices`, {
+        cache: "no-store",
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch prices");
+
+      const result = await res.json();
+      console.log("Fetched Kraken Prices:", result);
+
+      const normalizedPrices = normalizePricesForFrontend(result);
+
+      setPriceData(normalizedPrices); // <-- KEY LINE
+    } catch (err) {
+      console.error("❌ Failed to fetch Kraken prices", err);
+      setPriceData({});
+    }
+  };
+;
+
+  // Optional: Create a single refresh function to load both balances and prices
+  const refreshData = () => {
+    fetchKrakenData();
+    fetchKrakenPrices();
+  };
+
   // Fetch data on mount
   useEffect(() => {
-    fetchKrakenData();
+    refreshData();
   }, []);
 
-  const knownCryptoIconsOrgAssets = [
-    "btc",
-    "eth",
-    "usd",
-    "gbp",
-    "eur",
-    "doge",
-    "ada",
-    "trx",
-    "dot",
-    "sol",
-    "link",
-  ];
+  const jsonToFrontendKeyMap: Record<string, string> = {
+    BTC: "XXBT",
+    ETH: "XETH",
+    DOGE: "XXDG", // or "XDG" — whichever you prefer in your UI
+    USD: "ZUSD",
+    GBP: "ZGBP",
+    EUR: "ZEUR",
+
+    ADA: "ADA",
+    DOT: "DOT",
+    TRX: "TRX",
+    SOL: "SOL",
+    SUI: "SUI",
+    WIF: "WIF",
+    WIN: "WIN",
+    POL: "POL",
+    TIA: "TIA",
+    LINK: "LINK",
+  };
+
+  const normalizePricesForFrontend = (
+    pricesFromApi: Record<string, { usd: number; gbp: number }>
+  ) => {
+    return Object.entries(pricesFromApi).reduce((acc, [apiKey, priceData]) => {
+      const frontendKey = jsonToFrontendKeyMap[apiKey] || apiKey;
+      const meta = assetMetaMap[frontendKey];
+
+      if (!meta) return acc; // skip unknown assets
+
+      acc[frontendKey] = {
+        label: meta.label,
+        icon: meta.icon,
+        usd: priceData.usd,
+        gbp: priceData.gbp,
+      };
+
+      return acc;
+    }, {} as Record<string, { label: string; icon?: string; usd: number; gbp: number }>);
+  };
 
   const assetMetaMap: Record<string, { label: string; icon?: string }> = {
     XXBT: { label: "BTC", icon: "btc" },
@@ -176,17 +241,36 @@ const KrakenDataTable = () => {
     ZEUR: { label: "EUR", icon: "eur" },
     XDG: { label: "DOGE", icon: "doge" },
     XXDG: { label: "DOGE", icon: "doge" },
-    "ADA.F": { label: "ADA", icon: "ada" },
-    "TRX.F": { label: "TRX", icon: "trx" },
-    "DOT.F": { label: "DOT", icon: "dot" },
-    "TIA.F": { label: "TIA", icon: "tia" },
-    "SOL.F": { label: "SOL", icon: "sol" },
     POL: { label: "POL", icon: "pol" },
-    LINK: { label: "LINK", icon: "link" },
-    WIF: { label: "WIF", icon: "wif" }, // adjust if needed
-    SUI: { label: "SUI", icon: "sui" }, // confirm support
-    WIN: { label: "WIN", icon: "win" }, // might not be supported
+    ADA: { label: "ADA", icon: "ada" }, // Add this
+    DOT: { label: "DOT", icon: "dot" }, // Add this
+    TRX: { label: "TRX", icon: "trx" }, // Add this
+    SOL: { label: "SOL", icon: "sol" }, // Add this
+    SUI: { label: "SUI", icon: "sui" }, // Add this
+    WIF: { label: "WIF", icon: "wif" }, // Add this
+    WIN: { label: "WIN", icon: "win" }, // Add this
+    LINK: { label: "LINK", icon: "link" }, // Add this
+    TIA: { label: "TIA", icon: "tia" }, // Add this
   };
+
+  const mapAssetToPriceSymbol = (asset: string): string => {
+    const meta = assetMetaMap[asset] || { label: asset };
+    return meta.label;
+  };
+
+  const cleanAssetSymbol = (asset: string) => {
+    return asset.replace(".F", "");
+  };
+
+  const getPriceForAsset = (
+    asset: string,
+    currency: "usd" | "gbp"
+  ): number | undefined => {
+    const cleanKey = cleanAssetSymbol(asset);
+    const mappedKey = jsonToFrontendKeyMap[cleanKey] || cleanKey;
+    return priceData[mappedKey]?.[currency];
+  };
+
 
   const columns: ColumnDef<KrakenWallet>[] = [
     {
@@ -229,7 +313,6 @@ const KrakenDataTable = () => {
         );
       },
     },
-
     {
       accessorKey: "balance",
       header: ({ column }) => (
@@ -250,7 +333,64 @@ const KrakenDataTable = () => {
         return <div className="text-right px-2">{balance.toFixed(8)}</div>;
       },
     },
+    // Update the 'priceUSD' cell renderer
+    {
+      id: "priceUSD",
+      header: () => <div className="text-right px-2">Price (USD)</div>,
+      cell: ({ row }) => {
+        const price = getPriceForAsset(row.original.asset, "usd");
+        return (
+          <div className="text-right px-2">
+            {price ? `$${price.toFixed(2)}` : "-"}
+          </div>
+        );
+      },
+    },
+    {
+      id: "priceGBP",
+      header: () => <div className="text-right px-2">Price (GBP)</div>,
+      cell: ({ row }) => {
+        const price = getPriceForAsset(row.original.asset, "gbp");
+        return (
+          <div className="text-right px-2">
+            {price ? `£${price.toFixed(2)}` : "-"}
+          </div>
+        );
+      },
+    },
+    {
+      id: "totalUSD",
+      header: () => <div className="text-right px-2">Total (USD)</div>,
+      cell: ({ row }) => {
+        const price = getPriceForAsset(row.original.asset, "usd");
+        const total = price ? price * row.original.balance : null;
+        return (
+          <div className="text-right px-2">
+            {total ? `$${total.toFixed(2)}` : "-"}
+          </div>
+        );
+      },
+    },
+    {
+      id: "totalGBP",
+      header: () => <div className="text-right px-2">Total (GBP)</div>,
+      cell: ({ row }) => {
+        const price = getPriceForAsset(row.original.asset, "gbp");
+        const total = price ? price * row.original.balance : null;
+        return (
+          <div className="text-right px-2">
+            {total ? `£${total.toFixed(2)}` : "-"}
+          </div>
+        );
+      },
+    },
   ];
+
+  useEffect(() => {
+    refreshData();
+    const interval = setInterval(refreshData, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const table = useReactTable({
     data,
@@ -297,7 +437,7 @@ const KrakenDataTable = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchKrakenData}
+            onClick={refreshData}
             disabled={isLoading}
           >
             {isLoading ? (
