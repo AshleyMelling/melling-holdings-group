@@ -36,11 +36,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error("Logout failed:", err);
     }
     setUser(null);
-    router.push("/login");
+    router.push("/");
   };
 
   const validateToken = async () => {
-    // Only validate token for protected routes
+    console.log("validateToken called with pathname:", pathname);
     if (!isProtectedRoute(pathname)) return;
 
     try {
@@ -54,6 +54,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (!res.ok) {
         if (isProtectedRoute(pathname)) logout();
+        console.log("Not a protected route. Skipping token validation.");
         return;
       }
 
@@ -66,6 +67,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    console.log("Current pathname:", pathname);
     // Validate token if the user navigates to a protected route
     validateToken();
   }, [pathname]);
